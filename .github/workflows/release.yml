@@ -1,9 +1,13 @@
-﻿name: Release
+﻿name: Release Build and Publish
 
 on:
   push:
     branches:
+      - 'release/**'
+      - 'release/*'
+      - 'release-*'
       - 'releases/**'
+      - 'releases/*'
     tags:
       - 'v*'
   workflow_dispatch:
@@ -12,47 +16,73 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Build & Release Standalone Executable
+  build-and-release:
+    name: Build, Test, and Release
     runs-on: windows-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Run tests
-        run: dotnet test --configuration Release --no-restore --verbosity normal
-
-      - name: Publish Standalone Executable (Windows x64)
-        run: >
-          dotnet publish src/Sandman.App/Sandman.App.csproj
-          --configuration Release
-          --runtime win-x64
-          --self-contained true
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:EnableCompressionInSingleFile=true
-          -o ./publish/win-x64
-
-      - name: Package Release ZIP
+      - name: Determine Version
+        id: version_step
         shell: pwsh
         run: |
-          Compress-Archive -Path ./publish/win-x64/* -DestinationPath ./Sandman-win-x64.zip
+          $branch = "${{ github.ref_name }}"
+          $ver = $branch -replace '^releases?/', '' -replace '^releases?-', ''
+          if (-not $ver -or $ver -eq $branch) {
+            $ver = "v${{ github.run_number }}"
+          } elseif (-not ($ver.StartsWith("v") -or $ver.StartsWith("V"))) {
+            $ver = "v$ver"
+          }
+          Write-Host "Calculated version: $ver"
+          echo "RELEASE_VERSION=$ver" >> $env:GITHUB_ENV
+
+      - name: Restore dependencies
+        run: dotnet restore Sandman.sln
+
+      - name: Build Solution
+        run: dotnet build Sandman.sln -c Release --no-restore
+
+      - name: Run Tests
+        run: dotnet test Sandman.sln -c Release --no-build --verbosity normal
+
+      - name: Publish WinForms App (win-x64 self-contained)
+        run: |
+          dotnet publish src/Sandman.App/Sandman.App.csproj -c Release -r win-x64 --self-contained true -o ./publish/win-x64
+
+      - name: Publish Single-File Executable (win-x64 self-contained)
+        run: |
+          dotnet publish src/Sandman.App/Sandman.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o ./publish/single-file
+
+      - name: Package Release Assets
+        shell: pwsh
+        run: |
+          $zipName = "Sandman-${{ env.RELEASE_VERSION }}-win-x64.zip"
+          Compress-Archive -Path ./publish/win-x64/* -DestinationPath "./$zipName"
+          Write-Host "Created $zipName"
+
+          $singleExeName = "Sandman-${{ env.RELEASE_VERSION }}-win-x64.exe"
+          Copy-Item -Path ./publish/single-file/Sandman.App.exe -Destination "./$singleExeName"
+          Write-Host "Created $singleExeName"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            ./publish/win-x64/Sandman.App.exe
-            ./Sandman-win-x64.zip
+          tag_name: ${{ env.RELEASE_VERSION }}
+          name: Release ${{ env.RELEASE_VERSION }}
+          draft: false
+          prerelease: false
           generate_release_notes: true
+          files: |
+            Sandman-*-win-x64.zip
+            Sandman-*-win-x64.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
