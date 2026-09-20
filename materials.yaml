@@ -1,0 +1,1346 @@
+﻿# ===================================================================
+# SANDMAN MATERIAL CONFIGURATION (YAML)
+# ===================================================================
+# Edit this file to add or modify materials, phase changes, thermodynamics,
+# flammability, and explosion properties in the Sandman falling sands game.
+
+materials:
+  # -----------------------------------------------------------------
+  # METALS
+  # -----------------------------------------------------------------
+  - id: iron
+    name: Iron
+    category: Metals
+    color: '#A19D94'
+    color_variation: 12
+    state: Solid
+    density: 7.87
+    hardness: 8.0
+    thermal_conductivity: 0.8
+    specific_heat: 0.45
+    melting_point: 1538.0
+    melt_target: molten_iron
+    acid_resistance: 0.3
+
+  - id: molten_iron
+    name: Molten Iron
+    category: Metals
+    color: '#FF6B1A'
+    color_variation: 15
+    state: Liquid
+    density: 7.0
+    dispersion: 2
+    default_temperature: 1750.0
+    thermal_conductivity: 0.7
+    specific_heat: 0.8
+    freezing_point: 1538.0
+    freeze_target: iron
+    acid_resistance: 0.3
+
+  - id: copper
+    name: Copper
+    category: Metals
+    color: '#D4733E'
+    color_variation: 10
+    state: Solid
+    density: 8.96
+    hardness: 6.0
+    thermal_conductivity: 0.95
+    specific_heat: 0.38
+    melting_point: 1085.0
+    melt_target: molten_copper
+    acid_resistance: 0.4
+
+  - id: molten_copper
+    name: Molten Copper
+    category: Metals
+    color: '#FF8A3D'
+    color_variation: 12
+    state: Liquid
+    density: 8.0
+    dispersion: 2
+    default_temperature: 1250.0
+    thermal_conductivity: 0.85
+    specific_heat: 0.5
+    freezing_point: 1085.0
+    freeze_target: copper
+    acid_resistance: 0.4
+
+  - id: gold
+    name: Gold
+    category: Metals
+    color: '#FFD700'
+    color_variation: 10
+    state: Solid
+    density: 19.3
+    hardness: 5.0
+    thermal_conductivity: 0.9
+    specific_heat: 0.13
+    melting_point: 1064.0
+    melt_target: molten_gold
+    acid_resistance: 1.0
+
+  - id: molten_gold
+    name: Molten Gold
+    category: Metals
+    color: '#FFA500'
+    color_variation: 14
+    state: Liquid
+    density: 17.3
+    dispersion: 3
+    default_temperature: 1200.0
+    thermal_conductivity: 0.8
+    specific_heat: 0.2
+    freezing_point: 1064.0
+    freeze_target: gold
+    acid_resistance: 1.0
+
+  - id: lead
+    name: Lead
+    category: Metals
+    color: '#5C5E6B'
+    color_variation: 8
+    state: Solid
+    density: 11.34
+    hardness: 3.0
+    thermal_conductivity: 0.4
+    specific_heat: 0.13
+    melting_point: 327.0
+    melt_target: molten_lead
+    acid_resistance: 0.5
+
+  - id: molten_lead
+    name: Molten Lead
+    category: Metals
+    color: '#A0A2B0'
+    color_variation: 10
+    state: Liquid
+    density: 10.6
+    dispersion: 3
+    default_temperature: 420.0
+    thermal_conductivity: 0.35
+    specific_heat: 0.16
+    freezing_point: 327.0
+    freeze_target: lead
+    acid_resistance: 0.5
+
+  # -----------------------------------------------------------------
+  # PLASTICS
+  # -----------------------------------------------------------------
+  - id: plastic
+    name: Plastic
+    category: Plastics
+    color: '#4DA6FF'
+    color_variation: 12
+    state: Solid
+    density: 0.95
+    hardness: 2.0
+    thermal_conductivity: 0.1
+    specific_heat: 1.7
+    melting_point: 160.0
+    melt_target: molten_plastic
+    is_flammable: true
+    ignition_temperature: 350.0
+    fuel: 140
+    heat_generated: 45.0
+    burn_product: fire
+    smoke_chance: 0.3
+    acid_resistance: 0.85
+
+  - id: molten_plastic
+    name: Molten Plastic
+    category: Plastics
+    color: '#2A7BD9'
+    color_variation: 15
+    state: Liquid
+    density: 0.90
+    dispersion: 1
+    default_temperature: 200.0
+    thermal_conductivity: 0.15
+    specific_heat: 1.8
+    freezing_point: 150.0
+    freeze_target: plastic
+    is_flammable: true
+    ignition_temperature: 320.0
+    fuel: 120
+    heat_generated: 50.0
+    burn_product: fire
+    smoke_chance: 0.35
+    acid_resistance: 0.85
+
+  - id: rubber
+    name: Rubber
+    category: Plastics
+    color: '#242526'
+    color_variation: 6
+    state: MovableSolid
+    density: 1.1
+    hardness: 2.5
+    friction: 0.8
+    thermal_conductivity: 0.12
+    specific_heat: 1.9
+    is_flammable: true
+    ignition_temperature: 260.0
+    fuel: 160
+    heat_generated: 60.0
+    burn_product: smoke
+    smoke_chance: 0.5
+    acid_resistance: 0.8
+
+  - id: styrofoam
+    name: Styrofoam
+    category: Plastics
+    color: '#ECEEF2'
+    color_variation: 6
+    state: MovableSolid
+    density: 0.05
+    hardness: 0.5
+    friction: 0.2
+    thermal_conductivity: 0.03
+    specific_heat: 1.2
+    melting_point: 100.0
+    melt_target: molten_plastic
+    is_flammable: true
+    ignition_temperature: 200.0
+    fuel: 40
+    heat_generated: 35.0
+    burn_product: fire
+    smoke_chance: 0.4
+    acid_resistance: 0.1
+
+  # -----------------------------------------------------------------
+  # WOODS & ORGANICS
+  # -----------------------------------------------------------------
+  - id: wood
+    name: Wood
+    category: Woods
+    color: '#8A5A36'
+    color_variation: 14
+    state: Solid
+    density: 0.7
+    hardness: 3.5
+    thermal_conductivity: 0.15
+    specific_heat: 1.7
+    is_flammable: true
+    ignition_temperature: 280.0
+    fuel: 250
+    heat_generated: 45.0
+    burn_product: charcoal
+    smoke_chance: 0.2
+    fire_chance: 0.15
+    acid_resistance: 0.2
+
+  - id: sawdust
+    name: Sawdust
+    category: Woods
+    color: '#D9AB7E'
+    color_variation: 12
+    state: MovableSolid
+    density: 0.4
+    friction: 0.4
+    thermal_conductivity: 0.12
+    specific_heat: 1.5
+    is_flammable: true
+    ignition_temperature: 210.0
+    fuel: 90
+    heat_generated: 40.0
+    burn_product: ash
+    smoke_chance: 0.25
+    fire_chance: 0.2
+    acid_resistance: 0.15
+
+  - id: plant
+    name: Plant
+    category: Woods
+    color: '#3BA03B'
+    color_variation: 16
+    state: Solid
+    density: 0.5
+    hardness: 1.0
+    thermal_conductivity: 0.2
+    specific_heat: 2.0
+    is_flammable: true
+    ignition_temperature: 170.0
+    fuel: 60
+    heat_generated: 30.0
+    burn_product: ash
+    smoke_chance: 0.2
+    fire_chance: 0.15
+    acid_resistance: 0.05
+
+  - id: charcoal
+    name: Charcoal
+    category: Woods
+    color: '#2B2B2B'
+    color_variation: 8
+    state: MovableSolid
+    density: 0.55
+    friction: 0.6
+    thermal_conductivity: 0.25
+    specific_heat: 0.8
+    is_flammable: true
+    ignition_temperature: 360.0
+    fuel: 300
+    heat_generated: 80.0
+    burn_product: ash
+    smoke_chance: 0.1
+    fire_chance: 0.25
+    acid_resistance: 0.7
+
+  - id: ash
+    name: Ash
+    category: Woods
+    color: '#B3B3B3'
+    color_variation: 10
+    state: MovableSolid
+    density: 0.6
+    friction: 0.3
+    thermal_conductivity: 0.08
+    specific_heat: 0.8
+    is_flammable: false
+    acid_resistance: 0.2
+
+  - id: wax
+    name: Wax
+    category: Woods
+    color: '#FFF2B2'
+    color_variation: 8
+    state: Solid
+    density: 0.9
+    hardness: 1.0
+    thermal_conductivity: 0.1
+    specific_heat: 2.1
+    melting_point: 60.0
+    melt_target: molten_wax
+    is_flammable: true
+    ignition_temperature: 240.0
+    fuel: 180
+    heat_generated: 35.0
+    burn_product: fire
+    acid_resistance: 0.9
+
+  - id: molten_wax
+    name: Molten Wax
+    category: Woods
+    color: '#FFE880'
+    color_variation: 10
+    state: Liquid
+    density: 0.85
+    dispersion: 2
+    default_temperature: 80.0
+    thermal_conductivity: 0.12
+    specific_heat: 2.2
+    freezing_point: 58.0
+    freeze_target: wax
+    is_flammable: true
+    ignition_temperature: 220.0
+    fuel: 160
+    heat_generated: 40.0
+    burn_product: fire
+    acid_resistance: 0.9
+
+  # -----------------------------------------------------------------
+  # ROCKS & MINERALS
+  # -----------------------------------------------------------------
+  - id: stone
+    name: Stone
+    category: Rocks
+    color: '#808080'
+    color_variation: 15
+    state: Solid
+    density: 2.6
+    hardness: 7.0
+    thermal_conductivity: 0.35
+    specific_heat: 0.8
+    melting_point: 750.0
+    melt_target: lava
+    acid_resistance: 0.4
+
+  - id: sand
+    name: Sand
+    category: Rocks
+    color: '#E0C878'
+    color_variation: 14
+    state: MovableSolid
+    density: 1.6
+    friction: 0.45
+    thermal_conductivity: 0.25
+    specific_heat: 0.8
+    melting_point: 1400.0
+    melt_target: molten_glass
+    extinguishes_fire: true
+    acid_resistance: 0.6
+
+  - id: clay
+    name: Clay
+    category: Rocks
+    color: '#B87040'
+    color_variation: 12
+    state: MovableSolid
+    density: 1.8
+    friction: 0.8
+    thermal_conductivity: 0.3
+    specific_heat: 0.9
+    melting_point: 1100.0
+    melt_target: lava
+    acid_resistance: 0.5
+
+  - id: glass
+    name: Glass
+    category: Rocks
+    color: '#D8F0F8'
+    color_variation: 6
+    state: Solid
+    density: 2.5
+    hardness: 4.5
+    thermal_conductivity: 0.2
+    specific_heat: 0.84
+    melting_point: 1400.0
+    melt_target: molten_glass
+    acid_resistance: 0.95
+
+  - id: molten_glass
+    name: Molten Glass
+    category: Rocks
+    color: '#FFAE42'
+    color_variation: 14
+    state: Liquid
+    density: 2.3
+    dispersion: 1
+    default_temperature: 1450.0
+    thermal_conductivity: 0.25
+    specific_heat: 1.0
+    freezing_point: 1350.0
+    freeze_target: glass
+    acid_resistance: 0.95
+
+  - id: lava
+    name: Lava
+    category: Rocks
+    color: '#E63900'
+    color_variation: 20
+    state: Liquid
+    density: 3.1
+    dispersion: 1
+    default_temperature: 1900.0
+    thermal_conductivity: 1.0
+    specific_heat: 2.0
+    freezing_point: 750.0
+    freeze_target: basalt
+    acid_resistance: 0.7
+
+  - id: basalt
+    name: Basalt
+    category: Rocks
+    color: '#383838'
+    color_variation: 10
+    state: Solid
+    density: 3.0
+    hardness: 8.5
+    thermal_conductivity: 0.3
+    specific_heat: 0.84
+    melting_point: 1150.0
+    melt_target: lava
+    acid_resistance: 0.6
+
+  - id: obsidian
+    name: Obsidian
+    category: Rocks
+    color: '#1A1829'
+    color_variation: 8
+    state: Solid
+    density: 2.6
+    hardness: 9.0
+    thermal_conductivity: 0.2
+    specific_heat: 0.8
+    melting_point: 1300.0
+    melt_target: lava
+    acid_resistance: 0.9
+
+  # -----------------------------------------------------------------
+  # LIQUIDS
+  # -----------------------------------------------------------------
+  - id: water
+    name: Water
+    category: Liquids
+    color: '#2874A6'
+    color_variation: 12
+    state: Liquid
+    density: 1.0
+    dispersion: 4
+    default_temperature: 20.0
+    thermal_conductivity: 0.6
+    specific_heat: 4.18
+    freezing_point: 0.0
+    freeze_target: ice
+    boiling_point: 100.0
+    boil_target: steam
+    extinguishes_fire: true
+    acid_resistance: 0.8
+
+  - id: ice
+    name: Ice
+    category: Liquids
+    color: '#A9CCE3'
+    color_variation: 8
+    state: Solid
+    density: 0.92
+    hardness: 2.0
+    default_temperature: -10.0
+    thermal_conductivity: 0.5
+    specific_heat: 2.09
+    melting_point: 0.0
+    melt_target: water
+    extinguishes_fire: true
+    acid_resistance: 0.7
+
+  - id: steam
+    name: Steam
+    category: Liquids
+    color: '#E5E8E8'
+    color_variation: 10
+    state: Gas
+    density: 0.0006
+    dispersion: 2
+    default_temperature: 110.0
+    thermal_conductivity: 0.3
+    specific_heat: 2.0
+    condensation_point: 95.0
+    condense_target: water
+    lifetime: 300
+    decay_target: air
+
+  - id: oil
+    name: Oil
+    category: Liquids
+    color: '#6E5C3B'
+    color_variation: 10
+    state: Liquid
+    density: 0.85
+    dispersion: 2
+    default_temperature: 20.0
+    thermal_conductivity: 0.15
+    specific_heat: 2.0
+    is_flammable: true
+    ignition_temperature: 210.0
+    fuel: 180
+    heat_generated: 70.0
+    burn_product: fire
+    smoke_chance: 0.3
+    fire_chance: 0.2
+    acid_resistance: 0.7
+
+  - id: gasoline
+    name: Gasoline
+    category: Liquids
+    color: '#F4D03F'
+    color_variation: 8
+    state: Liquid
+    density: 0.74
+    dispersion: 4
+    default_temperature: 20.0
+    thermal_conductivity: 0.15
+    specific_heat: 2.2
+    is_flammable: true
+    ignition_temperature: 45.0
+    fuel: 55
+    heat_generated: 110.0
+    burn_product: fire
+    smoke_chance: 0.25
+    fire_chance: 0.35
+    acid_resistance: 0.7
+
+  - id: ethanol
+    name: Ethanol
+    category: Liquids
+    color: '#81D4FA'
+    color_variation: 6
+    state: Liquid
+    density: 0.79
+    dispersion: 4
+    default_temperature: 20.0
+    thermal_conductivity: 0.18
+    specific_heat: 2.4
+    is_flammable: true
+    ignition_temperature: 75.0
+    fuel: 70
+    heat_generated: 45.0
+    burn_product: air
+    smoke_chance: 0.02
+    fire_chance: 0.15
+    acid_resistance: 0.8
+
+  - id: kerosene
+    name: Kerosene
+    category: Liquids
+    color: '#FFE082'
+    color_variation: 8
+    state: Liquid
+    density: 0.81
+    dispersion: 3
+    default_temperature: 20.0
+    thermal_conductivity: 0.15
+    specific_heat: 2.0
+    is_flammable: true
+    ignition_temperature: 150.0
+    fuel: 140
+    heat_generated: 85.0
+    burn_product: fire
+    smoke_chance: 0.20
+    fire_chance: 0.20
+    acid_resistance: 0.7
+
+  - id: diesel
+    name: Diesel
+    category: Liquids
+    color: '#6D4C41'
+    color_variation: 10
+    state: Liquid
+    density: 0.85
+    dispersion: 2
+    default_temperature: 20.0
+    thermal_conductivity: 0.14
+    specific_heat: 1.9
+    is_flammable: true
+    ignition_temperature: 260.0
+    fuel: 260
+    heat_generated: 100.0
+    burn_product: ash
+    smoke_chance: 0.35
+    fire_chance: 0.15
+    acid_resistance: 0.75
+
+  - id: napalm
+    name: Napalm
+    category: Liquids
+    color: '#FF5722'
+    color_variation: 12
+    state: Liquid
+    density: 0.95
+    dispersion: 1
+    friction: 0.6
+    default_temperature: 20.0
+    thermal_conductivity: 0.25
+    specific_heat: 1.8
+    is_flammable: true
+    ignition_temperature: 90.0
+    fuel: 420
+    heat_generated: 170.0
+    burn_product: ash
+    smoke_chance: 0.40
+    fire_chance: 0.40
+    acid_resistance: 0.8
+
+  - id: pyrophoric_liquid
+    name: Pyrophoric Liquid
+    category: Liquids
+    color: '#FF3D00'
+    color_variation: 14
+    state: Liquid
+    density: 1.05
+    dispersion: 3
+    default_temperature: 20.0
+    thermal_conductivity: 0.3
+    specific_heat: 1.6
+    is_flammable: true
+    ignition_temperature: 18.0
+    fuel: 90
+    heat_generated: 240.0
+    burn_product: ash
+    smoke_chance: 0.30
+    fire_chance: 0.50
+    acid_resistance: 0.6
+
+  - id: lamp_oil
+    name: Lamp Oil
+    category: Liquids
+    color: '#FFB74D'
+    color_variation: 6
+    state: Liquid
+    density: 0.83
+    dispersion: 2
+    default_temperature: 20.0
+    thermal_conductivity: 0.14
+    specific_heat: 2.1
+    is_flammable: true
+    ignition_temperature: 210.0
+    fuel: 320
+    heat_generated: 40.0
+    burn_product: ash
+    smoke_chance: 0.08
+    fire_chance: 0.10
+    acid_resistance: 0.7
+
+  - id: acid
+    name: Acid
+    category: Liquids
+    color: '#52BE80'
+    color_variation: 14
+    state: Liquid
+    density: 1.25
+    dispersion: 3
+    default_temperature: 25.0
+    thermal_conductivity: 0.4
+    specific_heat: 2.5
+    acid_resistance: 1.0
+
+  - id: nitroglycerin
+    name: Nitroglycerin
+    category: Liquids
+    color: '#B0A875'
+    color_variation: 10
+    state: Liquid
+    density: 1.6
+    dispersion: 2
+    default_temperature: 20.0
+    thermal_conductivity: 0.2
+    specific_heat: 1.3
+    is_flammable: true
+    ignition_temperature: 50.0
+    is_explosive: true
+    explosion_radius: 24
+    explosion_force: 22.0
+    explosion_temperature: 2200.0
+    explosion_fire_count: 35
+    sensitive_to_shock: true
+    acid_resistance: 0.4
+
+  - id: liquid_nitrogen
+    name: Liquid Nitrogen
+    category: Liquids
+    color: '#A3E4D7'
+    color_variation: 12
+    state: Liquid
+    density: 0.8
+    dispersion: 4
+    default_temperature: -196.0
+    thermal_conductivity: 0.5
+    specific_heat: 2.0
+    boiling_point: -195.0
+    boil_target: nitrogen_gas
+    extinguishes_fire: true
+    acid_resistance: 0.9
+
+  - id: nitrogen_gas
+    name: Nitrogen Gas
+    category: Liquids
+    color: '#D1F2EB'
+    color_variation: 8
+    state: Gas
+    density: 0.001
+    dispersion: 3
+    default_temperature: -180.0
+    thermal_conductivity: 0.3
+    specific_heat: 1.0
+    lifetime: 200
+    decay_target: air
+    extinguishes_fire: true
+
+  # -----------------------------------------------------------------
+  # EXPLOSIVES
+  # -----------------------------------------------------------------
+  - id: gunpowder
+    name: Gunpowder
+    category: Explosives
+    color: '#565656'
+    color_variation: 12
+    state: MovableSolid
+    density: 1.5
+    friction: 0.4
+    thermal_conductivity: 0.2
+    specific_heat: 0.9
+    is_flammable: true
+    ignition_temperature: 180.0
+    is_explosive: true
+    explosion_radius: 14
+    explosion_force: 15.0
+    explosion_temperature: 1500.0
+    explosion_fire_count: 25
+    acid_resistance: 0.3
+
+  - id: tnt
+    name: TNT
+    category: Explosives
+    color: '#C0392B'
+    color_variation: 10
+    state: Solid
+    density: 1.65
+    hardness: 3.0
+    thermal_conductivity: 0.2
+    specific_heat: 1.0
+    is_flammable: true
+    ignition_temperature: 240.0
+    is_explosive: true
+    explosion_radius: 22
+    explosion_force: 24.0
+    explosion_temperature: 2000.0
+    explosion_fire_count: 40
+    acid_resistance: 0.4
+
+  - id: c4
+    name: C4
+    category: Explosives
+    color: '#D5D8DC'
+    color_variation: 8
+    state: Solid
+    density: 1.6
+    hardness: 4.0
+    thermal_conductivity: 0.15
+    specific_heat: 1.2
+    is_flammable: true
+    ignition_temperature: 300.0
+    is_explosive: true
+    explosion_radius: 30
+    explosion_force: 35.0
+    explosion_temperature: 2500.0
+    explosion_fire_count: 55
+    acid_resistance: 0.6
+
+  - id: dynamite
+    name: Dynamite
+    category: Explosives
+    color: '#922B21'
+    color_variation: 10
+    state: Solid
+    density: 1.5
+    hardness: 2.5
+    thermal_conductivity: 0.2
+    specific_heat: 1.1
+    is_flammable: true
+    ignition_temperature: 190.0
+    is_explosive: true
+    explosion_radius: 18
+    explosion_force: 18.0
+    explosion_temperature: 1800.0
+    explosion_fire_count: 30
+    acid_resistance: 0.35
+
+  - id: fireworks
+    name: Fireworks
+    category: Explosives
+    color: '#AF7AC5'
+    color_variation: 25
+    state: MovableSolid
+    density: 1.2
+    friction: 0.35
+    thermal_conductivity: 0.25
+    specific_heat: 0.9
+    is_flammable: true
+    ignition_temperature: 150.0
+    is_explosive: true
+    explosion_radius: 16
+    explosion_force: 14.0
+    explosion_temperature: 1600.0
+    explosion_fire_count: 60
+    acid_resistance: 0.3
+
+  - id: methane_gas
+    name: Methane Gas
+    category: Explosives
+    color: '#A9DFBF'
+    color_variation: 10
+    state: Gas
+    density: 0.0007
+    dispersion: 3
+    default_temperature: 20.0
+    thermal_conductivity: 0.15
+    specific_heat: 2.2
+    is_flammable: true
+    ignition_temperature: 120.0
+    is_explosive: true
+    explosion_radius: 12
+    explosion_force: 10.0
+    explosion_temperature: 1300.0
+    explosion_fire_count: 20
+    lifetime: 400
+    decay_target: air
+
+  - id: binary_explosive_a
+    name: Binary Explosive A
+    category: Explosives
+    color: '#2980B9'
+    color_variation: 15
+    state: MovableSolid
+    density: 1.45
+    friction: 0.35
+    thermal_conductivity: 0.2
+    specific_heat: 0.9
+    is_flammable: true
+    ignition_temperature: 350.0
+    reacts_with: binary_explosive_b
+    is_explosive: true
+    explodes_on_reaction: true
+    explosion_radius: 20
+    explosion_force: 22.0
+    explosion_temperature: 2000.0
+    explosion_fire_count: 40
+    acid_resistance: 0.4
+
+  - id: binary_explosive_b
+    name: Binary Explosive B
+    category: Explosives
+    color: '#E67E22'
+    color_variation: 15
+    state: MovableSolid
+    density: 1.4
+    friction: 0.35
+    thermal_conductivity: 0.2
+    specific_heat: 0.9
+    is_flammable: true
+    ignition_temperature: 350.0
+    reacts_with: binary_explosive_a
+    is_explosive: true
+    explodes_on_reaction: true
+    explosion_radius: 20
+    explosion_force: 22.0
+    explosion_temperature: 2000.0
+    explosion_fire_count: 40
+    acid_resistance: 0.4
+
+  - id: slow_fuse
+    name: Slow Fuse
+    category: Explosives
+    color: '#795548'
+    color_variation: 10
+    state: Solid
+    density: 1.5
+    hardness: 1.0
+    thermal_conductivity: 0.1
+    specific_heat: 1.5
+    is_flammable: true
+    ignition_temperature: 320.0
+    fuel: 30
+    heat_generated: 45.0
+    smoke_chance: 0.25
+    fire_chance: 0.05
+    burn_product: ash
+
+  - id: fuse
+    name: Standard Fuse
+    category: Explosives
+    color: '#D4A373'
+    color_variation: 12
+    state: Solid
+    density: 1.2
+    hardness: 1.0
+    thermal_conductivity: 0.2
+    specific_heat: 1.0
+    is_flammable: true
+    ignition_temperature: 180.0
+    fuel: 12
+    heat_generated: 90.0
+    smoke_chance: 0.15
+    fire_chance: 0.15
+    burn_product: ash
+
+  - id: fast_fuse
+    name: Fast Fuse
+    category: Explosives
+    color: '#E74C3C'
+    color_variation: 12
+    state: Solid
+    density: 1.0
+    hardness: 0.8
+    thermal_conductivity: 0.35
+    specific_heat: 0.8
+    is_flammable: true
+    ignition_temperature: 90.0
+    fuel: 4
+    heat_generated: 160.0
+    smoke_chance: 0.10
+    fire_chance: 0.30
+    burn_product: air
+
+  - id: instant_fuse
+    name: Instant Fuse
+    category: Explosives
+    color: '#FFF176'
+    color_variation: 8
+    state: Solid
+    density: 1.1
+    hardness: 1.2
+    thermal_conductivity: 0.8
+    specific_heat: 0.5
+    is_flammable: true
+    is_instant_fuse: true
+    ignition_temperature: 60.0
+    fuel: 1
+    heat_generated: 400.0
+    smoke_chance: 0.0
+    fire_chance: 0.50
+    burn_product: air
+
+  - id: powder_fuse
+    name: Powder Fuse
+    category: Explosives
+    color: '#A1887F'
+    color_variation: 15
+    state: MovableSolid
+    density: 1.4
+    friction: 0.45
+    thermal_conductivity: 0.25
+    specific_heat: 0.9
+    is_flammable: true
+    ignition_temperature: 140.0
+    fuel: 8
+    heat_generated: 120.0
+    smoke_chance: 0.20
+    fire_chance: 0.20
+    burn_product: ash
+
+  - id: waterproof_fuse
+    name: Waterproof Fuse
+    category: Explosives
+    color: '#2E7D32'
+    color_variation: 10
+    state: Solid
+    density: 1.6
+    hardness: 1.5
+    thermal_conductivity: 0.2
+    specific_heat: 1.1
+    is_flammable: true
+    is_waterproof: true
+    ignition_temperature: 200.0
+    fuel: 12
+    heat_generated: 100.0
+    smoke_chance: 0.05
+    fire_chance: 0.10
+    burn_product: ash
+
+  # --- Real Exotic Explosives ---
+  - id: octanitrocubane
+    name: Octanitrocubane
+    category: Explosives
+    color: '#E0F7FA'
+    color_variation: 8
+    state: Solid
+    density: 2.1
+    hardness: 5.0
+    thermal_conductivity: 0.2
+    specific_heat: 0.9
+    is_flammable: true
+    ignition_temperature: 280.0
+    is_explosive: true
+    explosion_radius: 42
+    explosion_force: 60.0
+    explosion_temperature: 4000.0
+    explosion_fire_count: 70
+    acid_resistance: 0.7
+
+  - id: azidoazide_azide
+    name: Azidoazide Azide
+    category: Explosives
+    color: '#FFD600'
+    color_variation: 12
+    state: MovableSolid
+    density: 1.4
+    friction: 0.6
+    thermal_conductivity: 0.25
+    specific_heat: 0.8
+    is_flammable: true
+    sensitive_to_shock: true
+    ignition_temperature: 35.0
+    is_explosive: true
+    explosion_radius: 25
+    explosion_force: 32.0
+    explosion_temperature: 2400.0
+    explosion_fire_count: 45
+    acid_resistance: 0.3
+
+  - id: thermobaric
+    name: Thermobaric
+    category: Explosives
+    color: '#B71C1C'
+    color_variation: 12
+    state: MovableSolid
+    density: 1.3
+    friction: 0.4
+    thermal_conductivity: 0.2
+    specific_heat: 1.0
+    is_flammable: true
+    ignition_temperature: 130.0
+    is_explosive: true
+    explosion_radius: 36
+    explosion_force: 28.0
+    explosion_temperature: 3200.0
+    explosion_fire_count: 120
+    acid_resistance: 0.4
+
+  - id: mercury_fulminate
+    name: Mercury Fulminate
+    category: Explosives
+    color: '#CFD8DC'
+    color_variation: 10
+    state: MovableSolid
+    density: 1.7
+    friction: 0.5
+    thermal_conductivity: 0.25
+    specific_heat: 0.85
+    is_flammable: true
+    sensitive_to_shock: true
+    ignition_temperature: 150.0
+    is_explosive: true
+    explosion_radius: 18
+    explosion_force: 20.0
+    explosion_temperature: 1800.0
+    explosion_fire_count: 30
+    acid_resistance: 0.35
+
+  # --- Fictitious Exotic Explosives ---
+  - id: dark_matter_bomb
+    name: Dark Matter Bomb
+    category: Explosives
+    color: '#4A148C'
+    color_variation: 15
+    state: Solid
+    density: 8.0
+    hardness: 10.0
+    thermal_conductivity: 0.3
+    specific_heat: 1.5
+    is_flammable: true
+    ignition_temperature: 400.0
+    is_explosive: true
+    explosion_radius: 52
+    explosion_force: 85.0
+    explosion_temperature: 5000.0
+    explosion_fire_count: 85
+    acid_resistance: 0.95
+
+  - id: plasma_bomb
+    name: Plasma Bomb
+    category: Explosives
+    color: '#00E5FF'
+    color_variation: 15
+    state: Solid
+    density: 2.0
+    hardness: 4.0
+    thermal_conductivity: 0.4
+    specific_heat: 1.2
+    is_flammable: true
+    ignition_temperature: 200.0
+    is_explosive: true
+    explosion_radius: 32
+    explosion_force: 40.0
+    explosion_temperature: 6500.0
+    explosion_fire_count: 95
+    acid_resistance: 0.8
+
+  - id: antimatter
+    name: Antimatter
+    category: Explosives
+    color: '#76FF03'
+    color_variation: 15
+    state: Solid
+    density: 5.0
+    hardness: 8.0
+    thermal_conductivity: 0.5
+    specific_heat: 1.5
+    is_flammable: true
+    ignition_temperature: 500.0
+    is_explosive: true
+    explosion_radius: 64
+    explosion_force: 100.0
+    explosion_temperature: 9000.0
+    explosion_fire_count: 160
+    acid_resistance: 0.9
+
+  - id: chrono_charge
+    name: Chrono Charge
+    category: Explosives
+    color: '#FF4081'
+    color_variation: 20
+    state: MovableSolid
+    density: 1.5
+    friction: 0.35
+    thermal_conductivity: 0.3
+    specific_heat: 1.0
+    is_flammable: true
+    ignition_temperature: 110.0
+    is_explosive: true
+    explosion_radius: 30
+    explosion_force: 45.0
+    explosion_temperature: 2800.0
+    explosion_fire_count: 80
+    acid_resistance: 0.5
+
+  # -----------------------------------------------------------------
+  # FLAMMABLES & FIRE / ENERGY
+  # -----------------------------------------------------------------
+  - id: fire
+    name: Fire
+    category: Flammables
+    color: '#FF4500'
+    color_variation: 25
+    state: Energy
+    density: 0.0005
+    dispersion: 2
+    default_temperature: 800.0
+    thermal_conductivity: 0.9
+    specific_heat: 0.5
+    lifetime: 30
+    decay_target: air
+    heat_generated: 150.0
+
+  - id: spark
+    name: Spark
+    category: Flammables
+    color: '#FFEAA7'
+    color_variation: 20
+    state: Energy
+    density: 0.001
+    default_temperature: 1100.0
+    thermal_conductivity: 0.9
+    specific_heat: 0.3
+    lifetime: 15
+    decay_target: air
+    heat_generated: 100.0
+
+  - id: ember
+    name: Ember
+    category: Flammables
+    color: '#E15F41'
+    color_variation: 15
+    state: Energy
+    density: 0.4
+    default_temperature: 650.0
+    thermal_conductivity: 0.6
+    specific_heat: 0.6
+    lifetime: 80
+    decay_target: ash
+    heat_generated: 60.0
+
+  - id: smoke
+    name: Smoke
+    category: Flammables
+    color: '#4A4A4A'
+    color_variation: 14
+    state: Gas
+    density: 0.0012
+    dispersion: 2
+    default_temperature: 60.0
+    thermal_conductivity: 0.1
+    specific_heat: 1.0
+    lifetime: 220
+    decay_target: air
+
+  # -----------------------------------------------------------------
+  # TOOLS & UTILITIES
+  # -----------------------------------------------------------------
+  - id: wall
+    name: Wall
+    category: Tools
+    color: '#888888'
+    color_variation: 4
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    thermal_conductivity: 0.0
+    specific_heat: 999.0
+    acid_resistance: 1.0
+    fixed_temperature: true
+
+  - id: heater
+    name: Heater
+    category: Tools
+    color: '#FF2222'
+    color_variation: 6
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    default_temperature: 600.0
+    thermal_conductivity: 1.0
+    specific_heat: 999.0
+    fixed_temperature: true
+    acid_resistance: 1.0
+
+  - id: cooler
+    name: Cooler
+    category: Tools
+    color: '#2299FF'
+    color_variation: 6
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    default_temperature: -100.0
+    thermal_conductivity: 1.0
+    specific_heat: 999.0
+    fixed_temperature: true
+    acid_resistance: 1.0
+
+  - id: water_spout
+    name: Water Spout
+    category: Tools
+    color: '#1B4F72'
+    color_variation: 4
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    is_emitter: true
+    emits_material: water
+    acid_resistance: 1.0
+    fixed_temperature: true
+
+  - id: sand_spout
+    name: Sand Spout
+    category: Tools
+    color: '#B7950B'
+    color_variation: 4
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    is_emitter: true
+    emits_material: sand
+    acid_resistance: 1.0
+    fixed_temperature: true
+
+  - id: oil_spout
+    name: Oil Spout
+    category: Tools
+    color: '#4A235A'
+    color_variation: 4
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    is_emitter: true
+    emits_material: oil
+    acid_resistance: 1.0
+    fixed_temperature: true
+
+  - id: lava_spout
+    name: Lava Spout
+    category: Tools
+    color: '#900C3F'
+    color_variation: 4
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    default_temperature: 1200.0
+    is_emitter: true
+    emits_material: lava
+    acid_resistance: 1.0
+    fixed_temperature: true
+
+  - id: acid_spout
+    name: Acid Spout
+    category: Tools
+    color: '#196F3D'
+    color_variation: 4
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    is_emitter: true
+    emits_material: acid
+    acid_resistance: 1.0
+    fixed_temperature: true
+
+  - id: drain
+    name: Drain
+    category: Tools
+    color: '#17202A'
+    color_variation: 4
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    is_drain: true
+    acid_resistance: 1.0
+    fixed_temperature: true
