@@ -41,6 +41,14 @@ namespace Sandman.Core.Simulation
             Clear();
         }
 
+        public GridSnapshot CreateSnapshot() => new GridSnapshot(this);
+
+        public void RestoreSnapshot(GridSnapshot snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            snapshot.RestoreTo(this);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetIndex(int x, int y) => y * Width + x;
 

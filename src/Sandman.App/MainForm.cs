@@ -37,6 +37,8 @@ namespace Sandman.App
         private MaterialRegistry _registry = null!;
         private SandGrid _grid = null!;
         private SimulationEngine _engine = null!;
+        private UndoRedoManager _undoRedo = null!;
+        private GridSnapshot? _pendingUndoSnapshot = null;
 
         private Bitmap _renderBitmap = null!;
         private int[] _pixelBuffer = null!;
@@ -70,6 +72,8 @@ namespace Sandman.App
         private ToolStripStatusLabel _fpsLabel = null!;
         private ToolStripStatusLabel _particleLabel = null!;
         private ToolStripStatusLabel _hotkeyHintLabel = null!;
+        private ToolStripMenuItem _undoMenuItem = null!;
+        private ToolStripMenuItem _redoMenuItem = null!;
 
         // Tool buttons list for active state updates
         private readonly List<NeonToolButton> _toolButtons = new();
@@ -87,6 +91,8 @@ namespace Sandman.App
 
         // Top bar HUD & Controls
         private NeonButton _playPauseButton = null!;
+        private NeonButton _undoButton = null!;
+        private NeonButton _redoButton = null!;
         private Label _brushSizeLabel = null!;
         private TrackBar _brushSizeTrackBar = null!;
         private CheckBox _fallThroughCheckBox = null!;
@@ -116,6 +122,8 @@ namespace Sandman.App
             _registry = MaterialRegistry.CreateDefault();
             _grid = new SandGrid(GridWidth, GridHeight, _registry);
             _engine = new SimulationEngine(_grid);
+            _undoRedo = new UndoRedoManager();
+            _undoRedo.HistoryChanged += (s, e) => UpdateUndoRedoUIState();
 
             // Initialize rendering buffer
             _pixelBuffer = new int[GridWidth * GridHeight];
@@ -134,6 +142,7 @@ namespace Sandman.App
             PopulateCategories();
             PopulateMaterialPalette();
             UpdateSelectedMaterialHUD();
+            UpdateUndoRedoUIState();
 
             // Timer for simulation loop
             _simTimer = new System.Windows.Forms.Timer();
@@ -168,6 +177,12 @@ namespace Sandman.App
             var saveSnapshotItem = new ToolStripMenuItem("&Save Snapshot Image...", null, (s, e) => SaveSnapshotImage());
             var exitItem = new ToolStripMenuItem("E&xit", null, (s, e) => Close());
             fileMenu.DropDownItems.AddRange(new ToolStripItem[] { loadYamlItem, reloadDefaultItem, new ToolStripSeparator(), saveSnapshotItem, new ToolStripSeparator(), exitItem });
+
+            // Edit Menu
+            var editMenu = new ToolStripMenuItem("&Edit");
+            _undoMenuItem = new ToolStripMenuItem("&Undo", null, (s, e) => PerformUndo(), Keys.Control | Keys.Z);
+            _redoMenuItem = new ToolStripMenuItem("&Redo", null, (s, e) => PerformRedo(), Keys.Control | Keys.Y);
+            editMenu.DropDownItems.AddRange(new ToolStripItem[] { _undoMenuItem, _redoMenuItem });
 
             // Simulation Menu
             var simMenu = new ToolStripMenuItem("&Simulation");
@@ -213,14 +228,14 @@ namespace Sandman.App
 
             // Demos Menu
             var demosMenu = new ToolStripMenuItem("&Demos");
-            demosMenu.DropDownItems.Add("Volcano & Lava Interaction", null, (s, e) => DemoScenes.LoadVolcano(_grid));
-            demosMenu.DropDownItems.Add("Explosives & Chain Detonation", null, (s, e) => DemoScenes.LoadExplosivesShowcase(_grid));
-            demosMenu.DropDownItems.Add("Fuses & Detonation Speeds", null, (s, e) => DemoScenes.LoadFusesDemo(_grid));
-            demosMenu.DropDownItems.Add("Binary Explosives Reaction", null, (s, e) => DemoScenes.LoadBinaryExplosivesDemo(_grid));
-            demosMenu.DropDownItems.Add("Metallurgy & Melting Lab", null, (s, e) => DemoScenes.LoadMetallurgyLab(_grid));
-            demosMenu.DropDownItems.Add("Fluid Density Stratification", null, (s, e) => DemoScenes.LoadFluidDynamics(_grid));
+            demosMenu.DropDownItems.Add("Volcano & Lava Interaction", null, (s, e) => { _undoRedo.RecordBeforeChange(_grid); DemoScenes.LoadVolcano(_grid); _canvas.Invalidate(); });
+            demosMenu.DropDownItems.Add("Explosives & Chain Detonation", null, (s, e) => { _undoRedo.RecordBeforeChange(_grid); DemoScenes.LoadExplosivesShowcase(_grid); _canvas.Invalidate(); });
+            demosMenu.DropDownItems.Add("Fuses & Detonation Speeds", null, (s, e) => { _undoRedo.RecordBeforeChange(_grid); DemoScenes.LoadFusesDemo(_grid); _canvas.Invalidate(); });
+            demosMenu.DropDownItems.Add("Binary Explosives Reaction", null, (s, e) => { _undoRedo.RecordBeforeChange(_grid); DemoScenes.LoadBinaryExplosivesDemo(_grid); _canvas.Invalidate(); });
+            demosMenu.DropDownItems.Add("Metallurgy & Melting Lab", null, (s, e) => { _undoRedo.RecordBeforeChange(_grid); DemoScenes.LoadMetallurgyLab(_grid); _canvas.Invalidate(); });
+            demosMenu.DropDownItems.Add("Fluid Density Stratification", null, (s, e) => { _undoRedo.RecordBeforeChange(_grid); DemoScenes.LoadFluidDynamics(_grid); _canvas.Invalidate(); });
 
-            menuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, simMenu, viewMenu, demosMenu });
+            menuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, editMenu, simMenu, viewMenu, demosMenu });
             this.MainMenuStrip = menuStrip;
             this.Controls.Add(menuStrip);
 
@@ -263,9 +278,31 @@ namespace Sandman.App
                 Width = 74,
                 Height = 32,
                 AccentColor = NeonTheme.NeonRed,
-                Margin = new Padding(2, 2, 6, 2)
+                Margin = new Padding(2, 2, 4, 2)
             };
             clearButton.Click += (s, e) => ClearGrid();
+
+            _undoButton = new NeonButton
+            {
+                Text = "↶ UNDO",
+                Width = 74,
+                Height = 32,
+                AccentColor = NeonTheme.NeonYellow,
+                Margin = new Padding(2, 2, 4, 2),
+                Enabled = false
+            };
+            _undoButton.Click += (s, e) => PerformUndo();
+
+            _redoButton = new NeonButton
+            {
+                Text = "↷ REDO",
+                Width = 74,
+                Height = 32,
+                AccentColor = NeonTheme.NeonYellow,
+                Margin = new Padding(2, 2, 6, 2),
+                Enabled = false
+            };
+            _redoButton.Click += (s, e) => PerformRedo();
 
             _fallThroughCheckBox = new CheckBox
             {
@@ -404,6 +441,7 @@ namespace Sandman.App
 
             topPanel.Controls.AddRange(new Control[] {
                 _playPauseButton, stepButton, clearButton,
+                _undoButton, _redoButton,
                 _fallThroughCheckBox,
                 speedLabel, speedCombo,
                 viewLabel, viewCombo,
@@ -441,7 +479,7 @@ namespace Sandman.App
                 ForeColor = NeonTheme.NeonCyan,
                 Font = NeonTheme.FontHeading
             };
-            _hotkeyHintLabel = new ToolStripStatusLabel("[B] Brush  [E] Eraser  [1-9] Hotbar  [X] Swap  [Ctrl+F] Search")
+            _hotkeyHintLabel = new ToolStripStatusLabel("[Ctrl+Z/Y] Undo/Redo  [B] Brush  [E] Eraser  [1-9] Hotbar  [X] Swap  [Ctrl+F] Search")
             {
                 ForeColor = NeonTheme.TextDim,
                 Font = NeonTheme.FontSmall
@@ -980,6 +1018,15 @@ namespace Sandman.App
             _currentHoverGridPos = pt;
             _isMouseInsideCanvas = true;
 
+            if (_currentTool != ActiveTool.Pipette)
+            {
+                _pendingUndoSnapshot = _grid.CreateSnapshot();
+            }
+            else
+            {
+                _pendingUndoSnapshot = null;
+            }
+
             if (_currentTool != ActiveTool.Line && _currentTool != ActiveTool.Rectangle && _currentTool != ActiveTool.CircleShape)
             {
                 ApplyToolAt(pt, _mouseButton, isInitialClick: true);
@@ -1031,6 +1078,16 @@ namespace Sandman.App
             {
                 _grid.DrawEllipse(_dragStartGridPos.X, _dragStartGridPos.Y, pt.X, pt.Y, mat, filled: Control.ModifierKeys.HasFlag(Keys.Shift), thickness: _brushSize);
             }
+
+            if (_pendingUndoSnapshot != null)
+            {
+                if (_pendingUndoSnapshot.HasDifferences(_grid))
+                {
+                    _undoRedo.PushSnapshot(_pendingUndoSnapshot);
+                }
+                _pendingUndoSnapshot = null;
+            }
+
             _canvas.Invalidate();
         }
 
@@ -1155,7 +1212,33 @@ namespace Sandman.App
 
         private void ClearGrid()
         {
+            _undoRedo.RecordBeforeChange(_grid);
             _grid.Clear();
+            _canvas.Invalidate();
+        }
+
+        private void PerformUndo()
+        {
+            if (_undoRedo.Undo(_grid))
+            {
+                _canvas.Invalidate();
+            }
+        }
+
+        private void PerformRedo()
+        {
+            if (_undoRedo.Redo(_grid))
+            {
+                _canvas.Invalidate();
+            }
+        }
+
+        private void UpdateUndoRedoUIState()
+        {
+            if (_undoButton != null) _undoButton.Enabled = _undoRedo.CanUndo;
+            if (_redoButton != null) _redoButton.Enabled = _undoRedo.CanRedo;
+            if (_undoMenuItem != null) _undoMenuItem.Enabled = _undoRedo.CanUndo;
+            if (_redoMenuItem != null) _redoMenuItem.Enabled = _undoRedo.CanRedo;
         }
 
         private void SetViewMode(ViewMode mode)
@@ -1519,7 +1602,17 @@ namespace Sandman.App
                 return;
             }
 
-            if (e.KeyCode == Keys.Space)
+            if (e.Control && e.KeyCode == Keys.Z && !e.Shift)
+            {
+                PerformUndo();
+                e.Handled = true;
+            }
+            else if ((e.Control && e.KeyCode == Keys.Y) || (e.Control && e.Shift && e.KeyCode == Keys.Z))
+            {
+                PerformRedo();
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.Space)
             {
                 TogglePlayPause();
                 e.Handled = true;

@@ -1865,5 +1865,233 @@ materials:
 
             Assert.True(tempFast < tempSlow, $"Fast decay rate should cool significantly faster than slow decay rate. Fast: {tempFast}°C, Slow: {tempSlow}°C");
         }
+
+        [Fact]
+        public void UndoRedo_GridSnapshot_CorrectlyCapturesAndRestoresGridState()
+        {
+            var registry = MaterialRegistry.CreateDefault();
+            var grid = new SandGrid(20, 20, registry, seed: 42);
+            ushort stoneIdx = registry.GetIndex("stone");
+
+            grid.DrawSquare(5, 5, 4, stoneIdx);
+            grid.SetAmbientTemperature(35.0f);
+            var snapshot = grid.CreateSnapshot();
+
+            // Mutate grid
+            grid.Clear();
+            grid.SetAmbientTemperature(0.0f);
+            Assert.True(snapshot.HasDifferences(grid));
+            Assert.Equal(0, grid.CountActiveParticles());
+
+            // Restore from snapshot
+            snapshot.RestoreTo(grid);
+            Assert.False(snapshot.HasDifferences(grid));
+            Assert.Equal(35.0f, grid.AmbientTemperature);
+            Assert.True(grid.CountActiveParticles() > 0);
+            Assert.Equal(stoneIdx, grid.GetCell(5, 5).MaterialIndex);
+        }
+
+        [Fact]
+        public void UndoRedo_UndoAndRedoSingleAction_RevertsAndRestoresState()
+        {
+            var registry = MaterialRegistry.CreateDefault();
+            var grid = new SandGrid(20, 20, registry, seed: 42);
+            var undoRedo = new UndoRedoManager();
+            ushort woodIdx = registry.GetIndex("wood");
+
+            Assert.False(undoRedo.CanUndo);
+            Assert.False(undoRedo.CanRedo);
+
+            // Record state before drawing
+            undoRedo.RecordBeforeChange(grid);
+            grid.DrawBox(2, 2, 8, 8, woodIdx, filled: true);
+            int particleCountAfterDraw = grid.CountActiveParticles();
+            Assert.True(particleCountAfterDraw > 0);
+            Assert.True(undoRedo.CanUndo);
+            Assert.False(undoRedo.CanRedo);
+
+            // Undo
+            bool undone = undoRedo.Undo(grid);
+            Assert.True(undone);
+            Assert.Equal(0, grid.CountActiveParticles());
+            Assert.False(undoRedo.CanUndo);
+            Assert.True(undoRedo.CanRedo);
+
+            // Redo
+            bool redone = undoRedo.Redo(grid);
+            Assert.True(redone);
+            Assert.Equal(particleCountAfterDraw, grid.CountActiveParticles());
+            Assert.True(undoRedo.CanUndo);
+            Assert.False(undoRedo.CanRedo);
+        }
+
+        [Fact]
+        public void UndoRedo_MultipleShapeDrawings_UndoStepByStepAndRedo()
+        {
+            var registry = MaterialRegistry.CreateDefault();
+            var grid = new SandGrid(30, 30, registry, seed: 42);
+            var undoRedo = new UndoRedoManager();
+            ushort wallIdx = registry.GetIndex("wall");
+            ushort waterIdx = registry.GetIndex("water");
+            ushort fireIdx = registry.GetIndex("fire");
+
+            // Step 1: Draw Wall Box
+            undoRedo.RecordBeforeChange(grid);
+            grid.DrawBox(2, 2, 10, 10, wallIdx, filled: false);
+            int count1 = grid.CountActiveParticles();
+
+            // Step 2: Draw Water Ellipse
+            undoRedo.RecordBeforeChange(grid);
+            grid.DrawEllipse(15, 15, 25, 25, waterIdx, filled: true);
+            int count2 = grid.CountActiveParticles();
+
+            // Step 3: Draw Line of Fire
+            undoRedo.RecordBeforeChange(grid);
+            grid.DrawLine(0, 0, 29, 0, 1, fireIdx);
+            int count3 = grid.CountActiveParticles();
+
+            Assert.True(count3 > count2);
+            Assert.True(count2 > count1);
+            Assert.Equal(3, undoRedo.UndoCount);
+            Assert.Equal(0, undoRedo.RedoCount);
+
+            // Undo Step 3 (Fire line removed)
+            undoRedo.Undo(grid);
+            Assert.Equal(count2, grid.CountActiveParticles());
+            Assert.True(grid.GetCell(0, 0).IsEmpty);
+
+            // Undo Step 2 (Water ellipse removed)
+            undoRedo.Undo(grid);
+            Assert.Equal(count1, grid.CountActiveParticles());
+            Assert.True(grid.GetCell(20, 20).IsEmpty);
+
+            // Undo Step 1 (Wall box removed)
+            undoRedo.Undo(grid);
+            Assert.Equal(0, grid.CountActiveParticles());
+            Assert.False(undoRedo.CanUndo);
+            Assert.Equal(3, undoRedo.RedoCount);
+
+            // Redo all 3
+            undoRedo.Redo(grid);
+            Assert.Equal(count1, grid.CountActiveParticles());
+
+            undoRedo.Redo(grid);
+            Assert.Equal(count2, grid.CountActiveParticles());
+
+            undoRedo.Redo(grid);
+            Assert.Equal(count3, grid.CountActiveParticles());
+            Assert.False(undoRedo.CanRedo);
+        }
+
+        [Fact]
+        public void UndoRedo_NewActionAfterUndo_ClearsRedoStack()
+        {
+            var registry = MaterialRegistry.CreateDefault();
+            var grid = new SandGrid(20, 20, registry, seed: 42);
+            var undoRedo = new UndoRedoManager();
+            ushort sandIdx = registry.GetIndex("sand");
+            ushort acidIdx = registry.GetIndex("acid");
+            ushort lavaIdx = registry.GetIndex("lava");
+
+            // Action 1
+            undoRedo.RecordBeforeChange(grid);
+            grid.DrawSquare(5, 5, 2, sandIdx);
+
+            // Action 2
+            undoRedo.RecordBeforeChange(grid);
+            grid.DrawSquare(15, 15, 2, acidIdx);
+
+            Assert.Equal(2, undoRedo.UndoCount);
+
+            // Undo Action 2
+            undoRedo.Undo(grid);
+            Assert.True(undoRedo.CanRedo);
+            Assert.Equal(1, undoRedo.RedoCount);
+
+            // New Action 3 replaces redo history
+            undoRedo.RecordBeforeChange(grid);
+            grid.DrawSquare(10, 10, 2, lavaIdx);
+
+            Assert.False(undoRedo.CanRedo);
+            Assert.Equal(0, undoRedo.RedoCount);
+            Assert.Equal(2, undoRedo.UndoCount);
+
+            // Undo should now revert Action 3, leaving Action 1
+            undoRedo.Undo(grid);
+            Assert.Equal(sandIdx, grid.GetCell(5, 5).MaterialIndex);
+            Assert.True(grid.GetCell(10, 10).IsEmpty);
+        }
+
+        [Fact]
+        public void UndoRedo_MaxHistoryLimit_TrimsOldestSnapshots()
+        {
+            var registry = MaterialRegistry.CreateDefault();
+            var grid = new SandGrid(10, 10, registry, seed: 42);
+            var undoRedo = new UndoRedoManager { MaxHistory = 3 };
+            ushort sandIdx = registry.GetIndex("sand");
+
+            for (int i = 0; i < 6; i++)
+            {
+                undoRedo.RecordBeforeChange(grid);
+                grid.SetCell(i, i, sandIdx);
+            }
+
+            Assert.Equal(3, undoRedo.UndoCount);
+
+            // We can only undo 3 times
+            Assert.True(undoRedo.Undo(grid));
+            Assert.True(undoRedo.Undo(grid));
+            Assert.True(undoRedo.Undo(grid));
+            Assert.False(undoRedo.CanUndo);
+            Assert.False(undoRedo.Undo(grid));
+        }
+
+        [Fact]
+        public void UndoRedo_Clear_ResetsUndoAndRedoStacks()
+        {
+            var registry = MaterialRegistry.CreateDefault();
+            var grid = new SandGrid(10, 10, registry, seed: 42);
+            var undoRedo = new UndoRedoManager();
+            ushort sandIdx = registry.GetIndex("sand");
+
+            undoRedo.RecordBeforeChange(grid);
+            grid.SetCell(1, 1, sandIdx);
+
+            undoRedo.Undo(grid);
+            Assert.True(undoRedo.CanRedo);
+
+            undoRedo.Clear();
+            Assert.False(undoRedo.CanUndo);
+            Assert.False(undoRedo.CanRedo);
+            Assert.Equal(0, undoRedo.UndoCount);
+            Assert.Equal(0, undoRedo.RedoCount);
+        }
+
+        [Fact]
+        public void UndoRedo_SandPlacementAndPhysics_UndoRevertsToPriorState()
+        {
+            var registry = MaterialRegistry.CreateDefault();
+            var grid = new SandGrid(15, 15, registry, seed: 42);
+            var engine = new SimulationEngine(grid);
+            var undoRedo = new UndoRedoManager();
+            ushort sandIdx = registry.GetIndex("sand");
+
+            undoRedo.RecordBeforeChange(grid);
+            grid.DrawCircle(7, 2, 2, sandIdx);
+
+            // Step simulation so sand falls
+            for (int i = 0; i < 8; i++)
+            {
+                engine.Step();
+            }
+
+            // Undo reverts grid back to blank state before sand was placed
+            undoRedo.Undo(grid);
+            Assert.Equal(0, grid.CountActiveParticles());
+
+            // Redo restores falling sand state
+            undoRedo.Redo(grid);
+            Assert.True(grid.CountActiveParticles() > 0);
+        }
     }
 }

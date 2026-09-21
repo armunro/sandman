@@ -544,19 +544,26 @@ namespace Sandman.App
             base.OnMouseUp(e);
         }
 
+        protected override void OnEnabledChanged(EventArgs e)
+        {
+            Cursor = Enabled ? Cursors.Hand : Cursors.Default;
+            Invalidate();
+            base.OnEnabledChanged(e);
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
             var rect = new Rectangle(0, 0, Width - 1, Height - 1);
 
-            Color bgColor = _isPressed ? NeonTheme.BgCardActive : (_isHovered ? NeonTheme.BgCardHover : NeonTheme.BgCard);
+            Color bgColor = !Enabled ? NeonTheme.BgMain : (_isPressed ? NeonTheme.BgCardActive : (_isHovered ? NeonTheme.BgCardHover : NeonTheme.BgCard));
             using (var bgBrush = new SolidBrush(bgColor))
             {
                 g.FillRectangle(bgBrush, rect);
             }
 
-            if (_isHovered || _isPressed)
+            if (Enabled && (_isHovered || _isPressed))
             {
                 using var pen = new Pen(_accentColor, 1.5f);
                 g.DrawRectangle(pen, rect);
@@ -567,7 +574,7 @@ namespace Sandman.App
                 g.DrawRectangle(pen, rect);
             }
 
-            Color textColor = _isHovered ? _accentColor : NeonTheme.TextPrimary;
+            Color textColor = Enabled ? (_isHovered ? _accentColor : NeonTheme.TextPrimary) : NeonTheme.TextDim;
             TextRenderer.DrawText(g, (string)Text, Font, rect, textColor, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
         }
     }
