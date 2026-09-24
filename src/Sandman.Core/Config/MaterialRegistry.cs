@@ -365,6 +365,42 @@ namespace Sandman.Core.Config
                 if (!_idToIndex.ContainsKey("temporal_charge")) _idToIndex["temporal_charge"] = chronoIdx;
                 if (!_idToIndex.ContainsKey("time_bomb")) _idToIndex["time_bomb"] = chronoIdx;
             }
+            if (_idToIndex.TryGetValue("inferno_bomb", out var infernoIdx))
+            {
+                if (!_idToIndex.ContainsKey("inferno bomb")) _idToIndex["inferno bomb"] = infernoIdx;
+                if (!_idToIndex.ContainsKey("inferno")) _idToIndex["inferno"] = infernoIdx;
+                if (!_idToIndex.ContainsKey("hellfire_bomb")) _idToIndex["hellfire_bomb"] = infernoIdx;
+                if (!_idToIndex.ContainsKey("hellfire bomb")) _idToIndex["hellfire bomb"] = infernoIdx;
+                if (!_idToIndex.ContainsKey("hellfire")) _idToIndex["hellfire"] = infernoIdx;
+                if (!_idToIndex.ContainsKey("firestorm_bomb")) _idToIndex["firestorm_bomb"] = infernoIdx;
+                if (!_idToIndex.ContainsKey("firestorm bomb")) _idToIndex["firestorm bomb"] = infernoIdx;
+                if (!_idToIndex.ContainsKey("firestorm")) _idToIndex["firestorm"] = infernoIdx;
+            }
+            if (_idToIndex.TryGetValue("supernova_charge", out var supernovaIdx))
+            {
+                if (!_idToIndex.ContainsKey("supernova charge")) _idToIndex["supernova charge"] = supernovaIdx;
+                if (!_idToIndex.ContainsKey("supernova")) _idToIndex["supernova"] = supernovaIdx;
+                if (!_idToIndex.ContainsKey("supernova_bomb")) _idToIndex["supernova_bomb"] = supernovaIdx;
+                if (!_idToIndex.ContainsKey("supernova bomb")) _idToIndex["supernova bomb"] = supernovaIdx;
+                if (!_idToIndex.ContainsKey("supernova_powder")) _idToIndex["supernova_powder"] = supernovaIdx;
+                if (!_idToIndex.ContainsKey("supernova powder")) _idToIndex["supernova powder"] = supernovaIdx;
+            }
+            if (_idToIndex.TryGetValue("cataclysm_bomb", out var cataclysmIdx))
+            {
+                if (!_idToIndex.ContainsKey("cataclysm bomb")) _idToIndex["cataclysm bomb"] = cataclysmIdx;
+                if (!_idToIndex.ContainsKey("cataclysm")) _idToIndex["cataclysm"] = cataclysmIdx;
+                if (!_idToIndex.ContainsKey("cataclysm_charge")) _idToIndex["cataclysm_charge"] = cataclysmIdx;
+                if (!_idToIndex.ContainsKey("cataclysm charge")) _idToIndex["cataclysm charge"] = cataclysmIdx;
+            }
+            if (_idToIndex.TryGetValue("hypernova_charge", out var hypernovaIdx))
+            {
+                if (!_idToIndex.ContainsKey("hypernova charge")) _idToIndex["hypernova charge"] = hypernovaIdx;
+                if (!_idToIndex.ContainsKey("hypernova")) _idToIndex["hypernova"] = hypernovaIdx;
+                if (!_idToIndex.ContainsKey("hypernova_bomb")) _idToIndex["hypernova_bomb"] = hypernovaIdx;
+                if (!_idToIndex.ContainsKey("hypernova bomb")) _idToIndex["hypernova bomb"] = hypernovaIdx;
+                if (!_idToIndex.ContainsKey("hypernova_powder")) _idToIndex["hypernova_powder"] = hypernovaIdx;
+                if (!_idToIndex.ContainsKey("hypernova powder")) _idToIndex["hypernova powder"] = hypernovaIdx;
+            }
 
             // Water-reactive explosives aliases
             if (_idToIndex.TryGetValue("sodium_powder", out var naPowderIdx))

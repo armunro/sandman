@@ -3732,5 +3732,233 @@ materials:
             Assert.True(waterBelowTorch >= 1, $"Melted water should fall through the torch to below. Found: {waterBelowTorch}");
             Assert.Equal(torchIdx, grid.GetCell(10, 15).MaterialIndex);
         }
+
+        [Fact]
+        public void NewExplosives_LoadedInRegistryWithExpectedProperties()
+        {
+            var registry = MaterialRegistry.CreateDefault();
+
+            ushort infernoIdx = registry.GetIndex("inferno_bomb");
+            Assert.True(infernoIdx > 0, "inferno_bomb should be registered.");
+            var infernoMat = registry.GetMaterial(infernoIdx);
+            Assert.True(infernoMat.Definition.IsExplosive, "inferno_bomb should be explosive.");
+            Assert.Equal("Explosives", infernoMat.Definition.Category);
+            Assert.Equal(100, infernoMat.Definition.ExplosionRadius);
+            Assert.True(infernoMat.Definition.ExplosionFireCount >= 1000);
+            Assert.Equal(StateOfMatter.Solid, infernoMat.Definition.State);
+
+            // Test aliases
+            Assert.Equal(infernoIdx, registry.GetIndex("inferno bomb"));
+            Assert.Equal(infernoIdx, registry.GetIndex("inferno"));
+            Assert.Equal(infernoIdx, registry.GetIndex("hellfire_bomb"));
+            Assert.Equal(infernoIdx, registry.GetIndex("hellfire"));
+            Assert.Equal(infernoIdx, registry.GetIndex("firestorm_bomb"));
+
+            ushort supernovaIdx = registry.GetIndex("supernova_charge");
+            Assert.True(supernovaIdx > 0, "supernova_charge should be registered.");
+            var supernovaMat = registry.GetMaterial(supernovaIdx);
+            Assert.True(supernovaMat.Definition.IsExplosive, "supernova_charge should be explosive.");
+            Assert.Equal("Explosives", supernovaMat.Definition.Category);
+            Assert.Equal(100, supernovaMat.Definition.ExplosionRadius);
+            Assert.True(supernovaMat.Definition.ExplosionFireCount >= 1000);
+            Assert.Equal(StateOfMatter.MovableSolid, supernovaMat.Definition.State);
+
+            // Test aliases
+            Assert.Equal(supernovaIdx, registry.GetIndex("supernova charge"));
+            Assert.Equal(supernovaIdx, registry.GetIndex("supernova"));
+            Assert.Equal(supernovaIdx, registry.GetIndex("supernova_bomb"));
+            Assert.Equal(supernovaIdx, registry.GetIndex("supernova bomb"));
+
+            // 2/3rds screen explosives
+            ushort cataclysmIdx = registry.GetIndex("cataclysm_bomb");
+            Assert.True(cataclysmIdx > 0, "cataclysm_bomb should be registered.");
+            var cataclysmMat = registry.GetMaterial(cataclysmIdx);
+            Assert.True(cataclysmMat.Definition.IsExplosive, "cataclysm_bomb should be explosive.");
+            Assert.Equal("Explosives", cataclysmMat.Definition.Category);
+            Assert.Equal(115, cataclysmMat.Definition.ExplosionRadius);
+            Assert.True(cataclysmMat.Definition.ExplosionFireCount >= 2000);
+            Assert.Equal(StateOfMatter.Solid, cataclysmMat.Definition.State);
+
+            Assert.Equal(cataclysmIdx, registry.GetIndex("cataclysm bomb"));
+            Assert.Equal(cataclysmIdx, registry.GetIndex("cataclysm"));
+            Assert.Equal(cataclysmIdx, registry.GetIndex("cataclysm_charge"));
+            Assert.Equal(cataclysmIdx, registry.GetIndex("cataclysm charge"));
+
+            ushort hypernovaIdx = registry.GetIndex("hypernova_charge");
+            Assert.True(hypernovaIdx > 0, "hypernova_charge should be registered.");
+            var hypernovaMat = registry.GetMaterial(hypernovaIdx);
+            Assert.True(hypernovaMat.Definition.IsExplosive, "hypernova_charge should be explosive.");
+            Assert.Equal("Explosives", hypernovaMat.Definition.Category);
+            Assert.Equal(115, hypernovaMat.Definition.ExplosionRadius);
+            Assert.True(hypernovaMat.Definition.ExplosionFireCount >= 2000);
+            Assert.Equal(StateOfMatter.MovableSolid, hypernovaMat.Definition.State);
+
+            Assert.Equal(hypernovaIdx, registry.GetIndex("hypernova charge"));
+            Assert.Equal(hypernovaIdx, registry.GetIndex("hypernova"));
+            Assert.Equal(hypernovaIdx, registry.GetIndex("hypernova_bomb"));
+            Assert.Equal(hypernovaIdx, registry.GetIndex("hypernova bomb"));
+        }
+
+        [Theory]
+        [InlineData("inferno_bomb")]
+        [InlineData("supernova_charge")]
+        public void NewExplosives_DetonateAndSetFireToHalfTheScreen(string explosiveId)
+        {
+            var registry = MaterialRegistry.CreateDefault();
+            // Full screen size (280 x 220 = 61,600 cells)
+            int screenWidth = 280;
+            int screenHeight = 220;
+            int totalScreenCells = screenWidth * screenHeight;
+
+            var grid = new SandGrid(screenWidth, screenHeight, registry, seed: 42);
+            var engine = new SimulationEngine(grid);
+
+            ushort explosiveIdx = registry.GetIndex(explosiveId);
+            ushort fireIdx = registry.GetIndex("fire");
+            ushort sparkIdx = registry.GetIndex("spark");
+            ushort woodIdx = registry.GetIndex("wood");
+
+            // Fill screen area with flammable wood background to test screen-wide fire ignition
+            for (int y = 0; y < screenHeight; y += 4)
+            {
+                for (int x = 0; x < screenWidth; x += 4)
+                {
+                    grid.SetCell(x, y, woodIdx);
+                }
+            }
+
+            int centerX = screenWidth / 2;
+            int centerY = screenHeight / 2;
+
+            // Place explosive at center
+            grid.SetCell(centerX, centerY, explosiveIdx);
+
+            // Detonate explosive
+            engine.DetonateAt(centerX, centerY, explosiveIdx);
+
+            // Calculate blast coverage: count cells within blast radius (r = 100)
+            int blastCellsAffected = 0;
+            int blastRadius = registry.GetMaterial(explosiveIdx).Definition.ExplosionRadius;
+            int blastRadiusSq = blastRadius * blastRadius;
+
+            int fireOrSparkCount = 0;
+            int burningFlammablesCount = 0;
+
+            for (int y = 0; y < screenHeight; y++)
+            {
+                int dy = y - centerY;
+                int dy2 = dy * dy;
+                for (int x = 0; x < screenWidth; x++)
+                {
+                    int dx = x - centerX;
+                    int d2 = dx * dx + dy2;
+
+                    if (d2 <= blastRadiusSq)
+                    {
+                        blastCellsAffected++;
+                    }
+
+                    ref var cell = ref grid.GetCell(x, y);
+                    if (cell.MaterialIndex == fireIdx || cell.MaterialIndex == sparkIdx)
+                    {
+                        fireOrSparkCount++;
+                    }
+                    else if (cell.IsBurning)
+                    {
+                        burningFlammablesCount++;
+                    }
+                }
+            }
+
+            // Verify blast coverage is ~half the screen (approx 50% of screen)
+            double blastCoverageRatio = (double)blastCellsAffected / totalScreenCells;
+            Assert.True(blastCoverageRatio >= 0.45 && blastCoverageRatio <= 0.55,
+                $"Blast radius {blastRadius} should cover approximately half the screen (expected ~0.50, got {blastCoverageRatio:P1}).");
+
+            // Verify massive fire generation across the blast area
+            Assert.True(fireOrSparkCount > 500, $"Explosive should generate dense fire particles (got {fireOrSparkCount}).");
+            Assert.True(burningFlammablesCount > 500, $"Explosive should ignite flammables across the blast radius (got {burningFlammablesCount}).");
+        }
+
+        [Theory]
+        [InlineData("cataclysm_bomb")]
+        [InlineData("hypernova_charge")]
+        public void NewExplosives_DetonateAndSetFireToTwoThirdsOfTheScreen(string explosiveId)
+        {
+            var registry = MaterialRegistry.CreateDefault();
+            // Full screen size (280 x 220 = 61,600 cells)
+            int screenWidth = 280;
+            int screenHeight = 220;
+            int totalScreenCells = screenWidth * screenHeight;
+
+            var grid = new SandGrid(screenWidth, screenHeight, registry, seed: 42);
+            var engine = new SimulationEngine(grid);
+
+            ushort explosiveIdx = registry.GetIndex(explosiveId);
+            ushort fireIdx = registry.GetIndex("fire");
+            ushort sparkIdx = registry.GetIndex("spark");
+            ushort woodIdx = registry.GetIndex("wood");
+
+            // Fill screen area with flammable wood background to test screen-wide fire ignition
+            for (int y = 0; y < screenHeight; y += 4)
+            {
+                for (int x = 0; x < screenWidth; x += 4)
+                {
+                    grid.SetCell(x, y, woodIdx);
+                }
+            }
+
+            int centerX = screenWidth / 2;
+            int centerY = screenHeight / 2;
+
+            // Place explosive at center
+            grid.SetCell(centerX, centerY, explosiveIdx);
+
+            // Detonate explosive
+            engine.DetonateAt(centerX, centerY, explosiveIdx);
+
+            // Calculate blast coverage: count cells within blast radius (r = 115)
+            int blastCellsAffected = 0;
+            int blastRadius = registry.GetMaterial(explosiveIdx).Definition.ExplosionRadius;
+            int blastRadiusSq = blastRadius * blastRadius;
+
+            int fireOrSparkCount = 0;
+            int burningFlammablesCount = 0;
+
+            for (int y = 0; y < screenHeight; y++)
+            {
+                int dy = y - centerY;
+                int dy2 = dy * dy;
+                for (int x = 0; x < screenWidth; x++)
+                {
+                    int dx = x - centerX;
+                    int d2 = dx * dx + dy2;
+
+                    if (d2 <= blastRadiusSq)
+                    {
+                        blastCellsAffected++;
+                    }
+
+                    ref var cell = ref grid.GetCell(x, y);
+                    if (cell.MaterialIndex == fireIdx || cell.MaterialIndex == sparkIdx)
+                    {
+                        fireOrSparkCount++;
+                    }
+                    else if (cell.IsBurning)
+                    {
+                        burningFlammablesCount++;
+                    }
+                }
+            }
+
+            // Verify blast coverage is ~2/3rds of the screen (approx 66.7% of screen)
+            double blastCoverageRatio = (double)blastCellsAffected / totalScreenCells;
+            Assert.True(blastCoverageRatio >= 0.62 && blastCoverageRatio <= 0.70,
+                $"Blast radius {blastRadius} should cover approximately 2/3rds of the screen (expected ~0.667, got {blastCoverageRatio:P1}).");
+
+            // Verify massive fire generation across the blast area
+            Assert.True(fireOrSparkCount > 800, $"Explosive should generate dense fire particles (got {fireOrSparkCount}).");
+            Assert.True(burningFlammablesCount > 800, $"Explosive should ignite flammables across the blast radius (got {burningFlammablesCount}).");
+        }
     }
 }

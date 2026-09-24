@@ -1339,6 +1339,82 @@ materials:
     explosion_fire_count: 80
     acid_resistance: 0.5
 
+  - id: inferno_bomb
+    name: Inferno Bomb
+    category: Explosives
+    color: '#FF2A00'
+    color_variation: 15
+    state: Solid
+    density: 3.0
+    hardness: 6.0
+    thermal_conductivity: 0.35
+    specific_heat: 1.0
+    is_flammable: true
+    ignition_temperature: 150.0
+    is_explosive: true
+    explosion_radius: 100
+    explosion_force: 80.0
+    explosion_temperature: 5500.0
+    explosion_fire_count: 1400
+    acid_resistance: 0.8
+
+  - id: supernova_charge
+    name: Supernova Charge
+    category: Explosives
+    color: '#FFE600'
+    color_variation: 20
+    state: MovableSolid
+    density: 2.2
+    friction: 0.4
+    thermal_conductivity: 0.45
+    specific_heat: 0.8
+    is_flammable: true
+    ignition_temperature: 120.0
+    is_explosive: true
+    explosion_radius: 100
+    explosion_force: 95.0
+    explosion_temperature: 8000.0
+    explosion_fire_count: 1800
+    acid_resistance: 0.9
+
+  - id: cataclysm_bomb
+    name: Cataclysm Bomb
+    category: Explosives
+    color: '#D50000'
+    color_variation: 15
+    state: Solid
+    density: 3.2
+    hardness: 6.5
+    thermal_conductivity: 0.4
+    specific_heat: 1.0
+    is_flammable: true
+    ignition_temperature: 160.0
+    is_explosive: true
+    explosion_radius: 115
+    explosion_force: 90.0
+    explosion_temperature: 7000.0
+    explosion_fire_count: 2200
+    acid_resistance: 0.85
+
+  - id: hypernova_charge
+    name: Hypernova Charge
+    category: Explosives
+    color: '#FF0055'
+    color_variation: 20
+    state: MovableSolid
+    density: 2.4
+    friction: 0.4
+    thermal_conductivity: 0.5
+    specific_heat: 0.8
+    is_flammable: true
+    ignition_temperature: 130.0
+    is_explosive: true
+    explosion_radius: 115
+    explosion_force: 100.0
+    explosion_temperature: 9500.0
+    explosion_fire_count: 2600
+    acid_resistance: 0.95
+
   # -------------------------------------------------------------
   # FLAMMABLES & FIRE / ENERGY
   # -------------------------------------------------------------
