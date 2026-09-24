@@ -26,6 +26,9 @@ namespace Sandman.Core.Config
         public byte BaseB { get; set; }
         public byte BaseA { get; set; }
 
+        public bool SuppressHeatGlow { get; set; }
+        public bool IsTorch { get; set; }
+
         public ushort MeltTargetIndex { get; set; }
         public ushort FreezeTargetIndex { get; set; }
         public ushort BoilTargetIndex { get; set; }
@@ -75,7 +78,8 @@ namespace Sandman.Core.Config
             BaseR = 0,
             BaseG = 0,
             BaseB = 0,
-            BaseA = 255
+            BaseA = 255,
+            SuppressHeatGlow = true
         };
 
         private readonly List<MaterialRuntime> _materials = new();
@@ -192,6 +196,14 @@ namespace Sandman.Core.Config
             var (r, g, b, a) = ParseHexColor(def.Color);
             uint rgba = (uint)((a << 24) | (r << 16) | (g << 8) | b);
 
+            bool suppressGlow = def.State == StateOfMatter.Energy ||
+                                def.IsEmitter ||
+                                def.FixedTemperature ||
+                                string.Equals(def.Category, "Tools", StringComparison.OrdinalIgnoreCase);
+
+            bool isTorch = def.Id.Contains("torch", StringComparison.OrdinalIgnoreCase) ||
+                           def.Name.Contains("Torch", StringComparison.OrdinalIgnoreCase);
+
             return new MaterialRuntime
             {
                 Index = index,
@@ -200,7 +212,9 @@ namespace Sandman.Core.Config
                 BaseR = r,
                 BaseG = g,
                 BaseB = b,
-                BaseA = a
+                BaseA = a,
+                SuppressHeatGlow = suppressGlow,
+                IsTorch = isTorch
             };
         }
 
@@ -352,6 +366,151 @@ namespace Sandman.Core.Config
                 if (!_idToIndex.ContainsKey("time_bomb")) _idToIndex["time_bomb"] = chronoIdx;
             }
 
+            // Water-reactive explosives aliases
+            if (_idToIndex.TryGetValue("sodium_powder", out var naPowderIdx))
+            {
+                if (!_idToIndex.ContainsKey("sodium powder")) _idToIndex["sodium powder"] = naPowderIdx;
+                if (!_idToIndex.ContainsKey("sodium_dust")) _idToIndex["sodium_dust"] = naPowderIdx;
+                if (!_idToIndex.ContainsKey("sodium dust")) _idToIndex["sodium dust"] = naPowderIdx;
+                if (!_idToIndex.ContainsKey("water_reactive_powder")) _idToIndex["water_reactive_powder"] = naPowderIdx;
+            }
+            if (_idToIndex.TryGetValue("potassium_powder", out var kPowderIdx))
+            {
+                if (!_idToIndex.ContainsKey("potassium powder")) _idToIndex["potassium powder"] = kPowderIdx;
+                if (!_idToIndex.ContainsKey("potassium_dust")) _idToIndex["potassium_dust"] = kPowderIdx;
+                if (!_idToIndex.ContainsKey("potassium dust")) _idToIndex["potassium dust"] = kPowderIdx;
+            }
+            if (_idToIndex.TryGetValue("sodium", out var naIdx))
+            {
+                if (!_idToIndex.ContainsKey("metallic_sodium")) _idToIndex["metallic_sodium"] = naIdx;
+                if (!_idToIndex.ContainsKey("metallic sodium")) _idToIndex["metallic sodium"] = naIdx;
+                if (!_idToIndex.ContainsKey("water_reactive_solid")) _idToIndex["water_reactive_solid"] = naIdx;
+            }
+            if (_idToIndex.TryGetValue("potassium", out var kIdx))
+            {
+                if (!_idToIndex.ContainsKey("metallic_potassium")) _idToIndex["metallic_potassium"] = kIdx;
+                if (!_idToIndex.ContainsKey("metallic potassium")) _idToIndex["metallic potassium"] = kIdx;
+            }
+            if (_idToIndex.TryGetValue("caesium", out var csIdx))
+            {
+                if (!_idToIndex.ContainsKey("cesium")) _idToIndex["cesium"] = csIdx;
+                if (!_idToIndex.ContainsKey("metallic_caesium")) _idToIndex["metallic_caesium"] = csIdx;
+                if (!_idToIndex.ContainsKey("metallic caesium")) _idToIndex["metallic caesium"] = csIdx;
+                if (!_idToIndex.ContainsKey("metallic_cesium")) _idToIndex["metallic_cesium"] = csIdx;
+                if (!_idToIndex.ContainsKey("metallic cesium")) _idToIndex["metallic cesium"] = csIdx;
+            }
+            if (_idToIndex.TryGetValue("nak_alloy", out var nakIdx))
+            {
+                if (!_idToIndex.ContainsKey("nak")) _idToIndex["nak"] = nakIdx;
+                if (!_idToIndex.ContainsKey("nak alloy")) _idToIndex["nak alloy"] = nakIdx;
+                if (!_idToIndex.ContainsKey("nak_liquid")) _idToIndex["nak_liquid"] = nakIdx;
+                if (!_idToIndex.ContainsKey("sodium_potassium")) _idToIndex["sodium_potassium"] = nakIdx;
+                if (!_idToIndex.ContainsKey("sodium potassium")) _idToIndex["sodium potassium"] = nakIdx;
+                if (!_idToIndex.ContainsKey("water_reactive_liquid")) _idToIndex["water_reactive_liquid"] = nakIdx;
+            }
+            if (_idToIndex.TryGetValue("liquid_caesium", out var liqCsIdx))
+            {
+                if (!_idToIndex.ContainsKey("liquid caesium")) _idToIndex["liquid caesium"] = liqCsIdx;
+                if (!_idToIndex.ContainsKey("liquid_cesium")) _idToIndex["liquid_cesium"] = liqCsIdx;
+                if (!_idToIndex.ContainsKey("liquid cesium")) _idToIndex["liquid cesium"] = liqCsIdx;
+                if (!_idToIndex.ContainsKey("molten_caesium")) _idToIndex["molten_caesium"] = liqCsIdx;
+                if (!_idToIndex.ContainsKey("molten caesium")) _idToIndex["molten caesium"] = liqCsIdx;
+            }
+            if (_idToIndex.TryGetValue("rubidium_liquid", out var rbIdx))
+            {
+                if (!_idToIndex.ContainsKey("rubidium")) _idToIndex["rubidium"] = rbIdx;
+                if (!_idToIndex.ContainsKey("liquid rubidium")) _idToIndex["liquid rubidium"] = rbIdx;
+                if (!_idToIndex.ContainsKey("liquid_rubidium")) _idToIndex["liquid_rubidium"] = rbIdx;
+            }
+
+            // High-temperature fire aliases
+            if (_idToIndex.TryGetValue("blue_fire", out var blueFireIdx))
+            {
+                if (!_idToIndex.ContainsKey("blue fire")) _idToIndex["blue fire"] = blueFireIdx;
+                if (!_idToIndex.ContainsKey("blue_flame")) _idToIndex["blue_flame"] = blueFireIdx;
+                if (!_idToIndex.ContainsKey("blue flame")) _idToIndex["blue flame"] = blueFireIdx;
+                if (!_idToIndex.ContainsKey("gas_fire")) _idToIndex["gas_fire"] = blueFireIdx;
+                if (!_idToIndex.ContainsKey("gas fire")) _idToIndex["gas fire"] = blueFireIdx;
+            }
+            if (_idToIndex.TryGetValue("green_fire", out var greenFireIdx))
+            {
+                if (!_idToIndex.ContainsKey("green fire")) _idToIndex["green fire"] = greenFireIdx;
+                if (!_idToIndex.ContainsKey("green_flame")) _idToIndex["green_flame"] = greenFireIdx;
+                if (!_idToIndex.ContainsKey("green flame")) _idToIndex["green flame"] = greenFireIdx;
+                if (!_idToIndex.ContainsKey("chemical_fire")) _idToIndex["chemical_fire"] = greenFireIdx;
+                if (!_idToIndex.ContainsKey("chemical fire")) _idToIndex["chemical fire"] = greenFireIdx;
+            }
+            if (_idToIndex.TryGetValue("white_fire", out var whiteFireIdx))
+            {
+                if (!_idToIndex.ContainsKey("white fire")) _idToIndex["white fire"] = whiteFireIdx;
+                if (!_idToIndex.ContainsKey("white_flame")) _idToIndex["white_flame"] = whiteFireIdx;
+                if (!_idToIndex.ContainsKey("white flame")) _idToIndex["white flame"] = whiteFireIdx;
+                if (!_idToIndex.ContainsKey("solar_fire")) _idToIndex["solar_fire"] = whiteFireIdx;
+                if (!_idToIndex.ContainsKey("solar fire")) _idToIndex["solar fire"] = whiteFireIdx;
+                if (!_idToIndex.ContainsKey("thermite_fire")) _idToIndex["thermite_fire"] = whiteFireIdx;
+                if (!_idToIndex.ContainsKey("thermite fire")) _idToIndex["thermite fire"] = whiteFireIdx;
+            }
+            if (_idToIndex.TryGetValue("plasma_fire", out var plasmaFireIdx))
+            {
+                if (!_idToIndex.ContainsKey("plasma fire")) _idToIndex["plasma fire"] = plasmaFireIdx;
+                if (!_idToIndex.ContainsKey("plasma_flame")) _idToIndex["plasma_flame"] = plasmaFireIdx;
+                if (!_idToIndex.ContainsKey("plasma flame")) _idToIndex["plasma flame"] = plasmaFireIdx;
+                if (!_idToIndex.ContainsKey("hyper_fire")) _idToIndex["hyper_fire"] = plasmaFireIdx;
+                if (!_idToIndex.ContainsKey("hyper fire")) _idToIndex["hyper fire"] = plasmaFireIdx;
+            }
+
+            // Torch emitter aliases
+            if (_idToIndex.TryGetValue("torch", out var torchIdx))
+            {
+                if (!_idToIndex.ContainsKey("fire_spout")) _idToIndex["fire_spout"] = torchIdx;
+                if (!_idToIndex.ContainsKey("fire spout")) _idToIndex["fire spout"] = torchIdx;
+                if (!_idToIndex.ContainsKey("fire_torch")) _idToIndex["fire_torch"] = torchIdx;
+                if (!_idToIndex.ContainsKey("fire torch")) _idToIndex["fire torch"] = torchIdx;
+                if (!_idToIndex.ContainsKey("torch_spout")) _idToIndex["torch_spout"] = torchIdx;
+                if (!_idToIndex.ContainsKey("torch spout")) _idToIndex["torch spout"] = torchIdx;
+            }
+            if (_idToIndex.TryGetValue("blue_torch", out var blueTorchIdx))
+            {
+                if (!_idToIndex.ContainsKey("blue torch")) _idToIndex["blue torch"] = blueTorchIdx;
+                if (!_idToIndex.ContainsKey("blue_fire_spout")) _idToIndex["blue_fire_spout"] = blueTorchIdx;
+                if (!_idToIndex.ContainsKey("blue fire spout")) _idToIndex["blue fire spout"] = blueTorchIdx;
+                if (!_idToIndex.ContainsKey("blue_fire_torch")) _idToIndex["blue_fire_torch"] = blueTorchIdx;
+                if (!_idToIndex.ContainsKey("blue fire torch")) _idToIndex["blue fire torch"] = blueTorchIdx;
+                if (!_idToIndex.ContainsKey("blue_spout")) _idToIndex["blue_spout"] = blueTorchIdx;
+                if (!_idToIndex.ContainsKey("blue spout")) _idToIndex["blue spout"] = blueTorchIdx;
+            }
+            if (_idToIndex.TryGetValue("green_torch", out var greenTorchIdx))
+            {
+                if (!_idToIndex.ContainsKey("green torch")) _idToIndex["green torch"] = greenTorchIdx;
+                if (!_idToIndex.ContainsKey("green_fire_spout")) _idToIndex["green_fire_spout"] = greenTorchIdx;
+                if (!_idToIndex.ContainsKey("green fire spout")) _idToIndex["green fire spout"] = greenTorchIdx;
+                if (!_idToIndex.ContainsKey("green_fire_torch")) _idToIndex["green_fire_torch"] = greenTorchIdx;
+                if (!_idToIndex.ContainsKey("green fire torch")) _idToIndex["green fire torch"] = greenTorchIdx;
+                if (!_idToIndex.ContainsKey("green_spout")) _idToIndex["green_spout"] = greenTorchIdx;
+                if (!_idToIndex.ContainsKey("green spout")) _idToIndex["green spout"] = greenTorchIdx;
+            }
+            if (_idToIndex.TryGetValue("white_torch", out var whiteTorchIdx))
+            {
+                if (!_idToIndex.ContainsKey("white torch")) _idToIndex["white torch"] = whiteTorchIdx;
+                if (!_idToIndex.ContainsKey("white_fire_spout")) _idToIndex["white_fire_spout"] = whiteTorchIdx;
+                if (!_idToIndex.ContainsKey("white fire spout")) _idToIndex["white fire spout"] = whiteTorchIdx;
+                if (!_idToIndex.ContainsKey("white_fire_torch")) _idToIndex["white_fire_torch"] = whiteTorchIdx;
+                if (!_idToIndex.ContainsKey("white fire torch")) _idToIndex["white fire torch"] = whiteTorchIdx;
+                if (!_idToIndex.ContainsKey("white_spout")) _idToIndex["white_spout"] = whiteTorchIdx;
+                if (!_idToIndex.ContainsKey("white spout")) _idToIndex["white spout"] = whiteTorchIdx;
+                if (!_idToIndex.ContainsKey("solar_torch")) _idToIndex["solar_torch"] = whiteTorchIdx;
+            }
+            if (_idToIndex.TryGetValue("plasma_torch", out var plasmaTorchIdx))
+            {
+                if (!_idToIndex.ContainsKey("plasma torch")) _idToIndex["plasma torch"] = plasmaTorchIdx;
+                if (!_idToIndex.ContainsKey("plasma_fire_spout")) _idToIndex["plasma_fire_spout"] = plasmaTorchIdx;
+                if (!_idToIndex.ContainsKey("plasma fire spout")) _idToIndex["plasma fire spout"] = plasmaTorchIdx;
+                if (!_idToIndex.ContainsKey("plasma_fire_torch")) _idToIndex["plasma_fire_torch"] = plasmaTorchIdx;
+                if (!_idToIndex.ContainsKey("plasma fire torch")) _idToIndex["plasma fire torch"] = plasmaTorchIdx;
+                if (!_idToIndex.ContainsKey("plasma_spout")) _idToIndex["plasma_spout"] = plasmaTorchIdx;
+                if (!_idToIndex.ContainsKey("plasma spout")) _idToIndex["plasma spout"] = plasmaTorchIdx;
+            }
+
             foreach (var mat in _materials)
             {
                 if (mat.Index == EmptyIndex) continue;
@@ -365,6 +524,10 @@ namespace Sandman.Core.Config
                 mat.EmitsMaterialIndex = GetIndex(mat.Definition.EmitsMaterial);
                 mat.ReactsWithIndex = GetIndex(mat.Definition.ReactsWith);
                 mat.ReactionProductIndex = GetIndex(mat.Definition.ReactionProduct);
+
+                mat.IsTorch = mat.Definition.Id.Contains("torch", StringComparison.OrdinalIgnoreCase) ||
+                              mat.Definition.Name.Contains("Torch", StringComparison.OrdinalIgnoreCase) ||
+                              (mat.Definition.IsEmitter && mat.EmitsMaterialIndex > 0 && GetMaterial(mat.EmitsMaterialIndex).Definition.State == StateOfMatter.Energy);
             }
         }
 

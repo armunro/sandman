@@ -87,7 +87,7 @@ materials:
     state: Liquid
     density: 17.3
     dispersion: 3
-    default_temperature: 1200.0
+    default_temperature: 1300.0
     thermal_conductivity: 0.8
     specific_heat: 0.2
     freezing_point: 1064.0
@@ -502,11 +502,11 @@ materials:
     density: 0.0006
     dispersion: 2
     default_temperature: 110.0
-    thermal_conductivity: 0.3
+    thermal_conductivity: 0.08
     specific_heat: 2.0
-    condensation_point: 95.0
+    condensation_point: 40.0
     condense_target: water
-    lifetime: 300
+    lifetime: 400
     decay_target: air
 
   - id: oil
@@ -896,6 +896,183 @@ materials:
     explosion_fire_count: 40
     acid_resistance: 0.4
 
+  # --- Water-Reactive Explosives ---
+  - id: sodium_powder
+    name: Sodium Powder
+    category: Explosives
+    color: '#D0D3D4'
+    color_variation: 12
+    state: MovableSolid
+    density: 1.15
+    friction: 0.4
+    thermal_conductivity: 0.35
+    specific_heat: 1.2
+    is_flammable: true
+    ignition_temperature: 115.0
+    reacts_with: water
+    is_explosive: true
+    explodes_on_reaction: true
+    explosion_radius: 16
+    explosion_force: 16.0
+    explosion_temperature: 1600.0
+    explosion_fire_count: 25
+    acid_resistance: 0.3
+
+  - id: potassium_powder
+    name: Potassium Powder
+    category: Explosives
+    color: '#D7BDE2'
+    color_variation: 15
+    state: MovableSolid
+    density: 1.2
+    friction: 0.35
+    thermal_conductivity: 0.35
+    specific_heat: 1.0
+    is_flammable: true
+    ignition_temperature: 90.0
+    reacts_with: water
+    is_explosive: true
+    explodes_on_reaction: true
+    explosion_radius: 20
+    explosion_force: 22.0
+    explosion_temperature: 1900.0
+    explosion_fire_count: 35
+    acid_resistance: 0.3
+
+  - id: sodium
+    name: Sodium
+    category: Explosives
+    color: '#CCD1D1'
+    color_variation: 10
+    state: Solid
+    density: 0.97
+    hardness: 1.5
+    thermal_conductivity: 0.5
+    specific_heat: 1.2
+    melting_point: 98.0
+    melt_target: nak_alloy
+    is_flammable: true
+    ignition_temperature: 115.0
+    reacts_with: water
+    is_explosive: true
+    explodes_on_reaction: true
+    explosion_radius: 18
+    explosion_force: 18.0
+    explosion_temperature: 1800.0
+    explosion_fire_count: 30
+    acid_resistance: 0.3
+
+  - id: potassium
+    name: Potassium
+    category: Explosives
+    color: '#C39BD3'
+    color_variation: 10
+    state: Solid
+    density: 0.89
+    hardness: 1.2
+    thermal_conductivity: 0.5
+    specific_heat: 1.0
+    melting_point: 63.5
+    melt_target: nak_alloy
+    is_flammable: true
+    ignition_temperature: 90.0
+    reacts_with: water
+    is_explosive: true
+    explodes_on_reaction: true
+    explosion_radius: 22
+    explosion_force: 24.0
+    explosion_temperature: 2000.0
+    explosion_fire_count: 40
+    acid_resistance: 0.3
+
+  - id: caesium
+    name: Caesium
+    category: Explosives
+    color: '#F9E79F'
+    color_variation: 10
+    state: Solid
+    density: 1.93
+    hardness: 1.0
+    thermal_conductivity: 0.4
+    specific_heat: 0.9
+    melting_point: 28.5
+    melt_target: liquid_caesium
+    is_flammable: true
+    ignition_temperature: 40.0
+    reacts_with: water
+    is_explosive: true
+    explodes_on_reaction: true
+    explosion_radius: 28
+    explosion_force: 32.0
+    explosion_temperature: 2500.0
+    explosion_fire_count: 50
+    acid_resistance: 0.25
+
+  - id: nak_alloy
+    name: NaK Alloy
+    category: Explosives
+    color: '#BDC3C7'
+    color_variation: 8
+    state: Liquid
+    density: 0.86
+    dispersion: 3
+    thermal_conductivity: 0.45
+    specific_heat: 1.1
+    is_flammable: true
+    ignition_temperature: 60.0
+    reacts_with: water
+    is_explosive: true
+    explodes_on_reaction: true
+    explosion_radius: 22
+    explosion_force: 24.0
+    explosion_temperature: 2100.0
+    explosion_fire_count: 40
+    acid_resistance: 0.3
+
+  - id: liquid_caesium
+    name: Liquid Caesium
+    category: Explosives
+    color: '#F7DC6F'
+    color_variation: 10
+    state: Liquid
+    density: 1.84
+    dispersion: 4
+    thermal_conductivity: 0.4
+    specific_heat: 0.9
+    freezing_point: 28.5
+    freeze_target: caesium
+    is_flammable: true
+    ignition_temperature: 30.0
+    reacts_with: water
+    is_explosive: true
+    explodes_on_reaction: true
+    explosion_radius: 30
+    explosion_force: 36.0
+    explosion_temperature: 2700.0
+    explosion_fire_count: 60
+    acid_resistance: 0.25
+
+  - id: rubidium_liquid
+    name: Liquid Rubidium
+    category: Explosives
+    color: '#EDBB99'
+    color_variation: 10
+    state: Liquid
+    density: 1.53
+    dispersion: 3
+    thermal_conductivity: 0.4
+    specific_heat: 0.95
+    is_flammable: true
+    ignition_temperature: 45.0
+    reacts_with: water
+    is_explosive: true
+    explodes_on_reaction: true
+    explosion_radius: 25
+    explosion_force: 28.0
+    explosion_temperature: 2300.0
+    explosion_fire_count: 45
+    acid_resistance: 0.25
+
   - id: slow_fuse
     name: Slow Fuse
     category: Explosives
@@ -1180,6 +1357,66 @@ materials:
     decay_target: air
     heat_generated: 150.0
 
+  - id: blue_fire
+    name: Blue Fire
+    category: Flammables
+    color: '#2E86DE'
+    color_variation: 20
+    state: Energy
+    density: 0.0004
+    dispersion: 2
+    default_temperature: 1500.0
+    thermal_conductivity: 0.95
+    specific_heat: 0.4
+    lifetime: 35
+    decay_target: air
+    heat_generated: 280.0
+
+  - id: green_fire
+    name: Green Fire
+    category: Flammables
+    color: '#2ECC71'
+    color_variation: 20
+    state: Energy
+    density: 0.00045
+    dispersion: 2
+    default_temperature: 2000.0
+    thermal_conductivity: 0.95
+    specific_heat: 0.45
+    lifetime: 35
+    decay_target: air
+    heat_generated: 350.0
+
+  - id: white_fire
+    name: White Fire
+    category: Flammables
+    color: '#FDFEFE'
+    color_variation: 15
+    state: Energy
+    density: 0.00035
+    dispersion: 3
+    default_temperature: 2600.0
+    thermal_conductivity: 1.0
+    specific_heat: 0.35
+    lifetime: 40
+    decay_target: air
+    heat_generated: 480.0
+
+  - id: plasma_fire
+    name: Plasma Fire
+    category: Flammables
+    color: '#D980FA'
+    color_variation: 15
+    state: Energy
+    density: 0.0003
+    dispersion: 3
+    default_temperature: 3500.0
+    thermal_conductivity: 1.0
+    specific_heat: 0.3
+    lifetime: 45
+    decay_target: air
+    heat_generated: 650.0
+
   - id: spark
     name: Spark
     category: Flammables
@@ -1274,6 +1511,8 @@ materials:
     state: Solid
     density: 999.0
     hardness: 999.0
+    thermal_conductivity: 0.6
+    specific_heat: 999.0
     is_emitter: true
     emits_material: water
     acid_resistance: 1.0
@@ -1287,6 +1526,8 @@ materials:
     state: Solid
     density: 999.0
     hardness: 999.0
+    thermal_conductivity: 0.25
+    specific_heat: 999.0
     is_emitter: true
     emits_material: sand
     acid_resistance: 1.0
@@ -1300,6 +1541,8 @@ materials:
     state: Solid
     density: 999.0
     hardness: 999.0
+    thermal_conductivity: 0.15
+    specific_heat: 999.0
     is_emitter: true
     emits_material: oil
     acid_resistance: 1.0
@@ -1314,6 +1557,8 @@ materials:
     density: 999.0
     hardness: 999.0
     default_temperature: 1200.0
+    thermal_conductivity: 1.0
+    specific_heat: 999.0
     is_emitter: true
     emits_material: lava
     acid_resistance: 1.0
@@ -1327,8 +1572,90 @@ materials:
     state: Solid
     density: 999.0
     hardness: 999.0
+    thermal_conductivity: 0.5
+    specific_heat: 999.0
     is_emitter: true
     emits_material: acid
+    acid_resistance: 1.0
+    fixed_temperature: true
+
+  - id: torch
+    name: Torch
+    category: Tools
+    color: '#D35400'
+    color_variation: 4
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    default_temperature: 800.0
+    thermal_conductivity: 0.9
+    specific_heat: 999.0
+    is_emitter: true
+    emits_material: fire
+    acid_resistance: 1.0
+    fixed_temperature: true
+
+  - id: blue_torch
+    name: Blue Torch
+    category: Tools
+    color: '#1B4F72'
+    color_variation: 4
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    default_temperature: 1500.0
+    thermal_conductivity: 0.95
+    specific_heat: 999.0
+    is_emitter: true
+    emits_material: blue_fire
+    acid_resistance: 1.0
+    fixed_temperature: true
+
+  - id: green_torch
+    name: Green Torch
+    category: Tools
+    color: '#1E8449'
+    color_variation: 4
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    default_temperature: 2000.0
+    thermal_conductivity: 0.95
+    specific_heat: 999.0
+    is_emitter: true
+    emits_material: green_fire
+    acid_resistance: 1.0
+    fixed_temperature: true
+
+  - id: white_torch
+    name: White Torch
+    category: Tools
+    color: '#BDC3C7'
+    color_variation: 4
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    default_temperature: 2600.0
+    thermal_conductivity: 1.0
+    specific_heat: 999.0
+    is_emitter: true
+    emits_material: white_fire
+    acid_resistance: 1.0
+    fixed_temperature: true
+
+  - id: plasma_torch
+    name: Plasma Torch
+    category: Tools
+    color: '#6C3483'
+    color_variation: 4
+    state: Solid
+    density: 999.0
+    hardness: 999.0
+    default_temperature: 3500.0
+    thermal_conductivity: 1.0
+    specific_heat: 999.0
+    is_emitter: true
+    emits_material: plasma_fire
     acid_resistance: 1.0
     fixed_temperature: true
 

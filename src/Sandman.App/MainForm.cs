@@ -80,6 +80,7 @@ namespace Sandman.App
 
         // Material panel controls
         private FlowLayoutPanel _materialFlowPanel = null!;
+        private FlowLayoutPanel _categoryFlow = null!;
         private readonly List<NeonCategoryPill> _categoryPills = new();
         private readonly List<NeonMaterialCard> _materialCards = new();
         private NeonSearchBox _searchBox = null!;
@@ -234,6 +235,9 @@ namespace Sandman.App
             demosMenu.DropDownItems.Add("Binary Explosives Reaction", null, (s, e) => { _undoRedo.RecordBeforeChange(_grid); DemoScenes.LoadBinaryExplosivesDemo(_grid); _canvas.Invalidate(); });
             demosMenu.DropDownItems.Add("Metallurgy & Melting Lab", null, (s, e) => { _undoRedo.RecordBeforeChange(_grid); DemoScenes.LoadMetallurgyLab(_grid); _canvas.Invalidate(); });
             demosMenu.DropDownItems.Add("Fluid Density Stratification", null, (s, e) => { _undoRedo.RecordBeforeChange(_grid); DemoScenes.LoadFluidDynamics(_grid); _canvas.Invalidate(); });
+            demosMenu.DropDownItems.Add("Water-Reactive Explosives Lab", null, (s, e) => { _undoRedo.RecordBeforeChange(_grid); DemoScenes.LoadWaterReactiveDemo(_grid); _canvas.Invalidate(); });
+            demosMenu.DropDownItems.Add("Torches & Thermal Fire Showcase", null, (s, e) => { _undoRedo.RecordBeforeChange(_grid); DemoScenes.LoadTorchesDemo(_grid); _canvas.Invalidate(); });
+            demosMenu.DropDownItems.Add("Water-Cooled Thermal Shield", null, (s, e) => { _undoRedo.RecordBeforeChange(_grid); DemoScenes.LoadWaterCooledShieldDemo(_grid); _canvas.Invalidate(); });
 
             menuStrip.Items.AddRange(new ToolStripItem[] { fileMenu, editMenu, simMenu, viewMenu, demosMenu });
             this.MainMenuStrip = menuStrip;
@@ -609,41 +613,17 @@ namespace Sandman.App
             var catHeader = new NeonSectionHeader("Categories", NeonTheme.NeonPink);
             rightPanel.Controls.Add(catHeader);
 
-            var categoryFlow = new FlowLayoutPanel
+            _categoryFlow = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 68,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = true,
                 BackColor = NeonTheme.BgPanel,
                 Padding = new Padding(0, 2, 0, 2)
             };
-
-            string[] categories = { "All", "Metals", "Rocks", "Liquids", "Explosives", "Flammables", "Woods", "Plastics", "Tools" };
-            foreach (var cat in categories)
-            {
-                var pill = new NeonCategoryPill
-                {
-                    CategoryName = cat,
-                    AccentColor = NeonTheme.GetCategoryNeonColor(cat),
-                    IsActive = cat == "All",
-                    Width = 98,
-                    Height = 26,
-                    Margin = new Padding(2)
-                };
-                pill.Click += (s, e) =>
-                {
-                    _activeCategory = pill.CategoryName;
-                    foreach (var p in _categoryPills)
-                    {
-                        p.IsActive = (p.CategoryName == _activeCategory);
-                    }
-                    FilterMaterialPalette();
-                };
-                _categoryPills.Add(pill);
-                categoryFlow.Controls.Add(pill);
-            }
-            rightPanel.Controls.Add(categoryFlow);
+            rightPanel.Controls.Add(_categoryFlow);
 
             // Palette container
             var paletteHeader = new NeonSectionHeader("Materials Palette", NeonTheme.NeonGreen);
@@ -826,18 +806,77 @@ namespace Sandman.App
 
         private void PopulateCategories()
         {
+            if (_categoryFlow == null) return;
+
+            _categoryFlow.SuspendLayout();
+            _categoryFlow.Controls.Clear();
+            _categoryPills.Clear();
+
             var materials = _registry.Materials.Where(m => m.Index != MaterialRegistry.EmptyIndex).ToList();
-            foreach (var pill in _categoryPills)
+
+            // Distinct categories from materials registry
+            var distinctCategories = materials
+                .Select(m => m.Definition.Category)
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            // Preferred ordering for default categories
+            string[] preferredOrder = { "Metals", "Rocks", "Liquids", "Explosives", "Flammables", "Woods", "Plastics", "Tools" };
+            var orderedCategories = new List<string> { "All" };
+            foreach (var pref in preferredOrder)
             {
-                if (pill.CategoryName == "All")
+                var match = distinctCategories.FirstOrDefault(c => c.Equals(pref, StringComparison.OrdinalIgnoreCase));
+                if (match != null && !orderedCategories.Contains(match, StringComparer.OrdinalIgnoreCase))
                 {
-                    pill.Count = materials.Count;
-                }
-                else
-                {
-                    pill.Count = materials.Count(m => m.Definition.Category.Equals(pill.CategoryName, StringComparison.OrdinalIgnoreCase));
+                    orderedCategories.Add(match);
                 }
             }
+            foreach (var cat in distinctCategories.OrderBy(c => c, StringComparer.OrdinalIgnoreCase))
+            {
+                if (!orderedCategories.Contains(cat, StringComparer.OrdinalIgnoreCase))
+                {
+                    orderedCategories.Add(cat);
+                }
+            }
+
+            if (!orderedCategories.Contains(_activeCategory, StringComparer.OrdinalIgnoreCase))
+            {
+                _activeCategory = "All";
+            }
+
+            foreach (var cat in orderedCategories)
+            {
+                int count = cat.Equals("All", StringComparison.OrdinalIgnoreCase)
+                    ? materials.Count
+                    : materials.Count(m => m.Definition.Category.Equals(cat, StringComparison.OrdinalIgnoreCase));
+
+                var pill = new NeonCategoryPill
+                {
+                    CategoryName = cat,
+                    Count = count,
+                    AccentColor = NeonTheme.GetCategoryNeonColor(cat),
+                    IsActive = cat.Equals(_activeCategory, StringComparison.OrdinalIgnoreCase),
+                    Width = 100,
+                    Height = 26,
+                    Margin = new Padding(2)
+                };
+
+                pill.Click += (s, e) =>
+                {
+                    _activeCategory = pill.CategoryName;
+                    foreach (var p in _categoryPills)
+                    {
+                        p.IsActive = p.CategoryName.Equals(_activeCategory, StringComparison.OrdinalIgnoreCase);
+                    }
+                    FilterMaterialPalette();
+                };
+
+                _categoryPills.Add(pill);
+                _categoryFlow.Controls.Add(pill);
+            }
+
+            _categoryFlow.ResumeLayout(true);
         }
 
         private void PopulateMaterialPalette()

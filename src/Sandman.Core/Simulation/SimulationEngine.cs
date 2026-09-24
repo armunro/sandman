@@ -93,10 +93,7 @@ namespace Sandman.Core.Simulation
                     // Emitter
                     if (mat.Definition.IsEmitter && mat.EmitsMaterialIndex > 0)
                     {
-                        if (rand.Next(3) == 0)
-                        {
-                            TryEmit(x, y, mat.EmitsMaterialIndex);
-                        }
+                        TryEmit(x, y, mat.EmitsMaterialIndex);
                         continue;
                     }
 
@@ -234,9 +231,7 @@ namespace Sandman.Core.Simulation
                     if (!nCell.IsEmpty)
                     {
                         var nMat = Grid.Registry.GetMaterial(nCell.MaterialIndex);
-                        nCell.Temperature += (heatSourceTemp - nCell.Temperature) * 0.2f;
-
-                        if (nMat.Definition.IsFlammable && !nCell.IsBurning && nCell.Temperature >= nMat.Definition.IgnitionTemperature)
+                        if (nMat.Definition.IsFlammable && !nCell.IsBurning && (nCell.Temperature >= nMat.Definition.IgnitionTemperature || heatSourceTemp >= nMat.Definition.IgnitionTemperature))
                         {
                             if (nMat.Definition.IsExplosive)
                             {
@@ -556,12 +551,13 @@ namespace Sandman.Core.Simulation
         {
             ref var cell = ref Grid.GetCell(x, y);
             float temp = MathF.Max(cell.Temperature, mat.Definition.DefaultTemperature);
+            cell.Temperature = temp;
             IgniteNeighbors(x, y, temp);
 
             // Flicker upward with random displacement
             int r = Grid.Random.Next(5);
             int nx = x + (Grid.Random.Next(3) - 1);
-            int ny = y - (r > 1 ? 1 : 0);
+            int ny = y - (r > 0 ? 1 : 0);
 
             if (Fallout && !Grid.InBounds(nx, ny) && Grid.InBounds(x, y))
             {
@@ -599,8 +595,54 @@ namespace Sandman.Core.Simulation
             }
 
             var targetMat = Grid.Registry.GetMaterial(target.MaterialIndex);
-            // Move through/sink through lighter liquids or gases
-            if (targetMat.Definition.State == StateOfMatter.Liquid || targetMat.Definition.State == StateOfMatter.Gas)
+
+            // If target is a torch, allow powders/movable solids and liquids to fall straight through the torch
+            if (targetMat.IsTorch && (fromMat.Definition.State == StateOfMatter.MovableSolid || fromMat.Definition.State == StateOfMatter.Liquid))
+            {
+                int dy = (toY >= fromY) ? 1 : -1;
+                int passY = toY;
+                while (Grid.InBounds(toX, passY) && Grid.Registry.GetMaterial(Grid.GetCell(toX, passY).MaterialIndex).IsTorch)
+                {
+                    passY += dy;
+                }
+
+                if (Fallout && !Grid.InBounds(toX, passY) && Grid.InBounds(fromX, fromY))
+                {
+                    Grid.SetEmpty(fromX, fromY);
+                    return true;
+                }
+
+                if (Grid.InBounds(toX, passY))
+                {
+                    ref var belowTorch = ref Grid.GetCell(toX, passY);
+                    if (belowTorch.IsEmpty)
+                    {
+                        SwapCells(fromX, fromY, toX, passY);
+                        Grid.GetCell(toX, passY).SetUpdated(true);
+                        return true;
+                    }
+
+                    var belowMat = Grid.Registry.GetMaterial(belowTorch.MaterialIndex);
+                    if (belowMat.Definition.State == StateOfMatter.Liquid ||
+                        belowMat.Definition.State == StateOfMatter.Gas ||
+                        belowMat.Definition.State == StateOfMatter.Energy)
+                    {
+                        if (fromMat.Definition.Density > belowMat.Definition.Density)
+                        {
+                            SwapCells(fromX, fromY, toX, passY);
+                            Grid.GetCell(toX, passY).SetUpdated(true);
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            // Move through/sink through lighter liquids, gases, or energy
+            if (targetMat.Definition.State == StateOfMatter.Liquid ||
+                targetMat.Definition.State == StateOfMatter.Gas ||
+                targetMat.Definition.State == StateOfMatter.Energy)
             {
                 if (fromMat.Definition.Density > targetMat.Definition.Density)
                 {
@@ -632,7 +674,11 @@ namespace Sandman.Core.Simulation
             }
 
             var targetMat = Grid.Registry.GetMaterial(target.MaterialIndex);
-            if (targetMat.Definition.State == StateOfMatter.Gas && fromMat.Definition.Density < targetMat.Definition.Density)
+            // Rise / bubble through heavier gases, liquids, or energy
+            if ((targetMat.Definition.State == StateOfMatter.Gas ||
+                 targetMat.Definition.State == StateOfMatter.Liquid ||
+                 targetMat.Definition.State == StateOfMatter.Energy) &&
+                fromMat.Definition.Density < targetMat.Definition.Density)
             {
                 SwapCells(fromX, fromY, toX, toY);
                 Grid.GetCell(toX, toY).SetUpdated(true);
@@ -677,8 +723,15 @@ namespace Sandman.Core.Simulation
 
         private void TryEmit(int x, int y, ushort emitMatIndex)
         {
-            int[] dx = { 0, 0, 1, -1, 1, -1, 1, -1 };
-            int[] dy = { 1, -1, 0, 0, 1, -1, -1, 1 };
+            var emitMat = Grid.Registry.GetMaterial(emitMatIndex);
+            bool upwardBias = emitMat.Definition.State == StateOfMatter.Energy || emitMat.Definition.State == StateOfMatter.Gas;
+
+            int[] dx = upwardBias
+                ? new int[] { 0, -1, 1, -1, 1, 0, -1, 1 }
+                : new int[] { 0, -1, 1, -1, 1, 0, -1, 1 };
+            int[] dy = upwardBias
+                ? new int[] { -1, -1, -1, 0, 0, 1, 1, 1 }
+                : new int[] { 1, 1, 1, 0, 0, -1, -1, -1 };
 
             for (int i = 0; i < 8; i++)
             {
@@ -689,6 +742,12 @@ namespace Sandman.Core.Simulation
                 {
                     ref var cell = ref Grid.GetCell(nx, ny);
                     if (cell.IsEmpty)
+                    {
+                        Grid.SetCell(nx, ny, emitMatIndex);
+                        break;
+                    }
+                    else if (emitMat.Definition.State != StateOfMatter.Gas &&
+                             Grid.Registry.GetMaterial(cell.MaterialIndex).Definition.State == StateOfMatter.Gas)
                     {
                         Grid.SetCell(nx, ny, emitMatIndex);
                         break;
@@ -730,7 +789,7 @@ namespace Sandman.Core.Simulation
             float amb = Grid.AmbientTemperature;
             const float dt = 0.08f;
             const float airConductivity = 0.018f;
-            const float airSpecificHeat = 0.25f;
+            const float airSpecificHeat = 0.15f;
 
             // 4-way thermal conduction and ambient diffusion
             for (int y = 0; y < h; y++)
@@ -753,11 +812,21 @@ namespace Sandman.Core.Simulation
                         kSelf = airConductivity;
                         cSelf = airSpecificHeat;
                     }
+                    else if (mat.Definition.State == StateOfMatter.Energy)
+                    {
+                        kSelf = mat.Definition.ThermalConductivity;
+                        cSelf = 0.65f;
+                    }
+                    else if (mat.Definition.State == StateOfMatter.Gas)
+                    {
+                        kSelf = mat.Definition.ThermalConductivity;
+                        cSelf = MathF.Max(0.08f, mat.Definition.SpecificHeat * 0.10f);
+                    }
                     else
                     {
                         kSelf = mat.Definition.ThermalConductivity;
                         float density = mat.Definition.Density > 0 ? mat.Definition.Density : 1.0f;
-                        cSelf = MathF.Max(0.2f, mat.Definition.SpecificHeat * MathF.Sqrt(MathF.Max(0.5f, density)));
+                        cSelf = MathF.Max(0.25f, mat.Definition.SpecificHeat * MathF.Sqrt(MathF.Max(0.5f, density)));
                     }
                     bool selfFixed = mat.Definition.FixedTemperature;
 
@@ -778,11 +847,21 @@ namespace Sandman.Core.Simulation
                                 kRight = airConductivity;
                                 cRight = airSpecificHeat;
                             }
+                            else if (rightMat.Definition.State == StateOfMatter.Energy)
+                            {
+                                kRight = rightMat.Definition.ThermalConductivity;
+                                cRight = 0.65f;
+                            }
+                            else if (rightMat.Definition.State == StateOfMatter.Gas)
+                            {
+                                kRight = rightMat.Definition.ThermalConductivity;
+                                cRight = MathF.Max(0.08f, rightMat.Definition.SpecificHeat * 0.10f);
+                            }
                             else
                             {
                                 kRight = rightMat.Definition.ThermalConductivity;
                                 float density = rightMat.Definition.Density > 0 ? rightMat.Definition.Density : 1.0f;
-                                cRight = MathF.Max(0.2f, rightMat.Definition.SpecificHeat * MathF.Sqrt(MathF.Max(0.5f, density)));
+                                cRight = MathF.Max(0.25f, rightMat.Definition.SpecificHeat * MathF.Sqrt(MathF.Max(0.5f, density)));
                             }
 
                             float kEff;
@@ -805,6 +884,10 @@ namespace Sandman.Core.Simulation
                                     {
                                         kEff = 0.010f + 0.015f * kMat;
                                     }
+                                    else if (nonAirMat.Definition.State == StateOfMatter.Gas)
+                                    {
+                                        kEff = 0.012f + 0.018f * kMat;
+                                    }
                                     else
                                     {
                                         kEff = 0.08f + 0.16f * kMat;
@@ -820,24 +903,31 @@ namespace Sandman.Core.Simulation
                                 }
                                 else
                                 {
-                                    kEff = (2.0f * kSelf * kRight) / (kSelf + kRight + 0.0001f);
+                                    float kHarmonic = (2.0f * kSelf * kRight) / (kSelf + kRight + 0.0001f);
                                     bool hasFluidOrEnergy = mat.Definition.State == StateOfMatter.Liquid || mat.Definition.State == StateOfMatter.Energy ||
                                                             rightMat.Definition.State == StateOfMatter.Liquid || rightMat.Definition.State == StateOfMatter.Energy;
                                     if (hasFluidOrEnergy)
                                     {
                                         // Vigorous immersion/wetting thermal flux for molten liquids & hot fluids
-                                        kEff = MathF.Max(kEff, 2.4f * MathF.Max(kSelf, kRight));
+                                        kEff = MathF.Max(kHarmonic * 3.0f, 2.5f * MathF.Max(kSelf, kRight));
+                                    }
+                                    else
+                                    {
+                                        kEff = kHarmonic;
                                     }
                                 }
                             }
 
                             float deltaT = rightCell.Temperature - cell.Temperature;
                             float deltaQ = deltaT * (kEff * dt);
-                            float maxQ = 0.45f * MathF.Min(cSelf, cRight) * MathF.Abs(deltaT);
+                            float cEff = (selfFixed || mat.Definition.State == StateOfMatter.Energy) ? cRight :
+                                         (rightFixed || rightMat.Definition.State == StateOfMatter.Energy) ? cSelf :
+                                         MathF.Min(cSelf, cRight);
+                            float maxQ = 0.25f * cEff * MathF.Abs(deltaT);
                             deltaQ = Math.Clamp(deltaQ, -maxQ, maxQ);
 
-                            if (!selfFixed) _tempDeltas[idx] += deltaQ / cSelf;
-                            if (!rightFixed) _tempDeltas[rightIdx] -= deltaQ / cRight;
+                            if (!selfFixed && mat.Definition.State != StateOfMatter.Energy) _tempDeltas[idx] += deltaQ / cSelf;
+                            if (!rightFixed && rightMat.Definition.State != StateOfMatter.Energy) _tempDeltas[rightIdx] -= deltaQ / cRight;
                         }
                     }
 
@@ -858,11 +948,21 @@ namespace Sandman.Core.Simulation
                                 kBottom = airConductivity;
                                 cBottom = airSpecificHeat;
                             }
+                            else if (bottomMat.Definition.State == StateOfMatter.Energy)
+                            {
+                                kBottom = bottomMat.Definition.ThermalConductivity;
+                                cBottom = 0.65f;
+                            }
+                            else if (bottomMat.Definition.State == StateOfMatter.Gas)
+                            {
+                                kBottom = bottomMat.Definition.ThermalConductivity;
+                                cBottom = MathF.Max(0.08f, bottomMat.Definition.SpecificHeat * 0.10f);
+                            }
                             else
                             {
                                 kBottom = bottomMat.Definition.ThermalConductivity;
                                 float density = bottomMat.Definition.Density > 0 ? bottomMat.Definition.Density : 1.0f;
-                                cBottom = MathF.Max(0.2f, bottomMat.Definition.SpecificHeat * MathF.Sqrt(MathF.Max(0.5f, density)));
+                                cBottom = MathF.Max(0.25f, bottomMat.Definition.SpecificHeat * MathF.Sqrt(MathF.Max(0.5f, density)));
                             }
 
                             float kEff;
@@ -885,6 +985,10 @@ namespace Sandman.Core.Simulation
                                     {
                                         kEff = 0.010f + 0.015f * kMat;
                                     }
+                                    else if (nonAirMat.Definition.State == StateOfMatter.Gas)
+                                    {
+                                        kEff = 0.012f + 0.018f * kMat;
+                                    }
                                     else
                                     {
                                         kEff = 0.08f + 0.16f * kMat;
@@ -900,13 +1004,17 @@ namespace Sandman.Core.Simulation
                                 }
                                 else
                                 {
-                                    kEff = (2.0f * kSelf * kBottom) / (kSelf + kBottom + 0.0001f);
+                                    float kHarmonic = (2.0f * kSelf * kBottom) / (kSelf + kBottom + 0.0001f);
                                     bool hasFluidOrEnergy = mat.Definition.State == StateOfMatter.Liquid || mat.Definition.State == StateOfMatter.Energy ||
                                                             bottomMat.Definition.State == StateOfMatter.Liquid || bottomMat.Definition.State == StateOfMatter.Energy;
                                     if (hasFluidOrEnergy)
                                     {
                                         // Vigorous immersion/wetting thermal flux for molten liquids & hot fluids
-                                        kEff = MathF.Max(kEff, 2.4f * MathF.Max(kSelf, kBottom));
+                                        kEff = MathF.Max(kHarmonic * 3.0f, 2.5f * MathF.Max(kSelf, kBottom));
+                                    }
+                                    else
+                                    {
+                                        kEff = kHarmonic;
                                     }
                                 }
                             }
@@ -915,7 +1023,11 @@ namespace Sandman.Core.Simulation
                             // Upward convection boost: hot air/gas and hot solids vigorously rise heat into air above
                             if (bottomCell.Temperature > cell.Temperature)
                             {
-                                if (cell.IsEmpty && bottomCell.IsEmpty)
+                                if (bottomMat.Definition.State == StateOfMatter.Energy)
+                                {
+                                    kFactor *= 1.8f; // Hot rising flame transfers heat upward to overhead structures
+                                }
+                                else if (cell.IsEmpty && bottomCell.IsEmpty)
                                 {
                                     kFactor *= 1.6f; // Hot air rises through air
                                 }
@@ -923,15 +1035,22 @@ namespace Sandman.Core.Simulation
                                 {
                                     kFactor *= 1.5f; // Hot solid/gas transfers vigorous convective heat to air directly above it
                                 }
+                                else if (mat.Definition.State == StateOfMatter.Liquid)
+                                {
+                                    kFactor *= 1.4f; // Vigorous upward convective cooling into fluid above
+                                }
                             }
 
                             float deltaT = bottomCell.Temperature - cell.Temperature;
                             float deltaQ = deltaT * kFactor;
-                            float maxQ = 0.45f * MathF.Min(cSelf, cBottom) * MathF.Abs(deltaT);
+                            float cEff = (selfFixed || mat.Definition.State == StateOfMatter.Energy) ? cBottom :
+                                         (bottomFixed || bottomMat.Definition.State == StateOfMatter.Energy) ? cSelf :
+                                         MathF.Min(cSelf, cBottom);
+                            float maxQ = 0.25f * cEff * MathF.Abs(deltaT);
                             deltaQ = Math.Clamp(deltaQ, -maxQ, maxQ);
 
-                            if (!selfFixed) _tempDeltas[idx] += deltaQ / cSelf;
-                            if (!bottomFixed) _tempDeltas[bottomIdx] -= deltaQ / cBottom;
+                            if (!selfFixed && mat.Definition.State != StateOfMatter.Energy) _tempDeltas[idx] += deltaQ / cSelf;
+                            if (!bottomFixed && bottomMat.Definition.State != StateOfMatter.Energy) _tempDeltas[bottomIdx] -= deltaQ / cBottom;
                         }
                     }
 
@@ -946,19 +1065,22 @@ namespace Sandman.Core.Simulation
                         }
                         else
                         {
-                            // Material ambient radiation/dissipation (normal entropy across all materials)
-                            float tempDiff = MathF.Abs(cell.Temperature - amb);
-                            float radBoost = 1.0f + MathF.Min(2.0f, tempDiff / 300.0f);
-
                             float dissRate;
                             if (mat.Definition.State == StateOfMatter.Liquid)
                             {
-                                dissRate = (0.002f + 0.004f * kSelf) / cSelf;
+                                dissRate = (0.0003f + 0.0006f * kSelf) / cSelf;
+                            }
+                            else if (mat.Definition.State == StateOfMatter.Gas)
+                            {
+                                dissRate = 0.004f;
+                            }
+                            else if (mat.Definition.State == StateOfMatter.Energy)
+                            {
+                                dissRate = 0.0f;
                             }
                             else
                             {
-                                // Solids, movable solids, gases, energy
-                                dissRate = (0.010f + 0.012f * kSelf) * radBoost / MathF.Min(cSelf, 1.2f);
+                                dissRate = (0.006f + 0.008f * kSelf) / cSelf;
                             }
                             _tempDeltas[idx] += (amb - cell.Temperature) * (dissRate * decayFactor);
                         }
@@ -975,17 +1097,13 @@ namespace Sandman.Core.Simulation
                 {
                     cell.Temperature = mat.Definition.DefaultTemperature;
                 }
+                else if (mat.Definition.State == StateOfMatter.Energy)
+                {
+                    cell.Temperature = MathF.Max(mat.Definition.DefaultTemperature, cell.Temperature + _tempDeltas[i]);
+                }
                 else
                 {
-                    cell.Temperature += _tempDeltas[i];
-                    if (TemperatureDecayRate > 0.0f)
-                    {
-                        float snapThreshold = cell.IsEmpty ? 0.5f : MathF.Max(0.5f, 7.0f * TemperatureDecayRate);
-                        if (MathF.Abs(cell.Temperature - amb) < snapThreshold)
-                        {
-                            cell.Temperature = amb;
-                        }
-                    }
+                    cell.Temperature = MathF.Max(-273.15f, cell.Temperature + _tempDeltas[i]);
                 }
             }
         }
@@ -1053,15 +1171,41 @@ namespace Sandman.Core.Simulation
                     // 5. Boiling
                     if (mat.Definition.BoilingPoint.HasValue && temp >= mat.Definition.BoilingPoint.Value && mat.BoilTargetIndex > 0)
                     {
-                        Grid.SetCell(x, y, mat.BoilTargetIndex, (float?)temp);
+                        float boilPoint = mat.Definition.BoilingPoint.Value;
+                        Grid.SetCell(x, y, mat.BoilTargetIndex, (float?)MathF.Min(temp, boilPoint + 5.0f));
+
+                        // Latent heat absorption: boiling vigorously extracts thermal energy from touching hot solids/liquids
+                        int[] bx = { 0, 0, 1, -1 };
+                        int[] by = { 1, -1, 0, 0 };
+                        for (int i = 0; i < 4; i++)
+                        {
+                            int nx = x + bx[i];
+                            int ny = y + by[i];
+                            if (Grid.InBounds(nx, ny))
+                            {
+                                ref var nCell = ref Grid.GetCell(nx, ny);
+                                if (!nCell.IsEmpty)
+                                {
+                                    var nMat = reg.GetMaterial(nCell.MaterialIndex);
+                                    if (!nMat.Definition.FixedTemperature && nCell.Temperature > boilPoint)
+                                    {
+                                        float heatExtraction = MathF.Min(180.0f, (nCell.Temperature - boilPoint) * 0.65f);
+                                        nCell.Temperature = MathF.Max(boilPoint, nCell.Temperature - heatExtraction);
+                                    }
+                                }
+                            }
+                        }
                         continue;
                     }
 
                     // 6. Condensation
                     if (mat.Definition.CondensationPoint.HasValue && temp < mat.Definition.CondensationPoint.Value && mat.CondenseTargetIndex > 0)
                     {
-                        Grid.SetCell(x, y, mat.CondenseTargetIndex, (float?)temp);
-                        continue;
+                        if (Grid.Random.Next(4) == 0 || temp < mat.Definition.CondensationPoint.Value - 15.0f)
+                        {
+                            Grid.SetCell(x, y, mat.CondenseTargetIndex, (float?)temp);
+                            continue;
+                        }
                     }
                 }
             }

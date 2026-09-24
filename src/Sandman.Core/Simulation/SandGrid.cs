@@ -380,9 +380,10 @@ namespace Sandman.Core.Simulation
                     }
                     else
                     {
-                        // Thermal incandescence / glow at warm & high temperatures (e.g. above 150°C)
+                        // Thermal incandescence / glow at warm & high temperatures (e.g. above 100°C) for non-flame/non-torch materials
                         uint c = cell.Color;
-                        if (cell.Temperature > 150.0f)
+                        var mat = Registry.GetMaterial(cell.MaterialIndex);
+                        if (!mat.SuppressHeatGlow && cell.Temperature > 100.0f)
                         {
                             c = ApplyHeatGlow(c, cell.Temperature);
                         }
@@ -425,17 +426,19 @@ namespace Sandman.Core.Simulation
             }
         }
 
-        private static uint ApplyHeatGlow(uint baseColor, float temperature)
+        public static uint ApplyHeatGlow(uint baseColor, float temperature)
         {
+            if (temperature <= 100.0f) return baseColor;
+
             byte a = (byte)((baseColor >> 24) & 0xFF);
             byte r = (byte)((baseColor >> 16) & 0xFF);
             byte g = (byte)((baseColor >> 8) & 0xFF);
             byte b = (byte)(baseColor & 0xFF);
 
-            float glowRatio = Math.Clamp((temperature - 150.0f) / 1400.0f, 0.0f, 1.0f);
-            byte gr = (byte)Math.Min(255, r + (int)(glowRatio * 220));
-            byte gg = (byte)Math.Min(255, g + (int)(glowRatio * 130));
-            byte gb = (byte)Math.Min(255, b + (int)(glowRatio * 60));
+            float glowRatio = Math.Clamp((temperature - 100.0f) / 1400.0f, 0.0f, 1.0f);
+            byte gr = (byte)Math.Clamp((int)(r * (1.0f - glowRatio * 0.3f) + 255 * glowRatio), 0, 255);
+            byte gg = (byte)Math.Clamp((int)(g * (1.0f - glowRatio * 0.85f) + 20 * glowRatio), 0, 255);
+            byte gb = (byte)Math.Clamp((int)(b * (1.0f - glowRatio * 0.90f) + 15 * glowRatio), 0, 255);
 
             return (uint)((a << 24) | (gr << 16) | (gg << 8) | gb);
         }

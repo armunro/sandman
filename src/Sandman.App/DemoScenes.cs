@@ -254,5 +254,167 @@ namespace Sandman.App
             // Ignite the trigger
             grid.SetCell(startX, (y1 + y2) / 2, sparkIdx, 1000.0f);
         }
+
+        public static void LoadWaterReactiveDemo(SandGrid grid)
+        {
+            grid.Clear();
+            int w = grid.Width;
+            int h = grid.Height;
+
+            ushort wallIdx = grid.Registry.GetIndex("wall");
+            ushort waterIdx = grid.Registry.GetIndex("water");
+            ushort naPowderIdx = grid.Registry.GetIndex("sodium_powder");
+            ushort sodiumSolidIdx = grid.Registry.GetIndex("sodium");
+            ushort nakLiquidIdx = grid.Registry.GetIndex("nak_alloy");
+
+            // Base platform
+            grid.DrawBox(0, h - 8, w - 1, h - 1, wallIdx, filled: true);
+
+            int sectionWidth = w / 3;
+
+            // Chamber 1: Explosive Powder (Sodium Powder) suspended above a water basin
+            int c1X = 20;
+            int c1W = sectionWidth - 30;
+            grid.DrawBox(c1X, h - 60, c1X + c1W, h - 10, wallIdx, filled: false);
+            grid.DrawBox(c1X + 2, h - 25, c1X + c1W - 2, h - 11, waterIdx, filled: true);
+            // Suspended powder funnel
+            grid.DrawLine(c1X + 4, h - 75, c1X + c1W / 2 - 2, h - 45, 1, wallIdx);
+            grid.DrawLine(c1X + c1W - 4, h - 75, c1X + c1W / 2 + 2, h - 45, 1, wallIdx);
+            grid.DrawBox(c1X + 8, h - 90, c1X + c1W - 8, h - 76, naPowderIdx, filled: true);
+
+            // Chamber 2: Explosive Solid (Metallic Sodium) in a pit with water dropper above
+            int c2X = sectionWidth + 15;
+            int c2W = sectionWidth - 30;
+            grid.DrawBox(c2X, h - 60, c2X + c2W, h - 10, wallIdx, filled: false);
+            grid.DrawBox(c2X + c2W / 2 - 6, h - 20, c2X + c2W / 2 + 6, h - 11, sodiumSolidIdx, filled: true);
+            // Water reservoir above
+            grid.DrawBox(c2X + 4, h - 95, c2X + c2W - 4, h - 75, wallIdx, filled: false);
+            grid.DrawBox(c2X + 6, h - 93, c2X + c2W - 6, h - 77, waterIdx, filled: true);
+            // Perforated release at bottom of reservoir
+            grid.SetCell(c2X + c2W / 2, h - 75, MaterialRegistry.EmptyIndex);
+
+            // Chamber 3: Explosive Liquid (NaK Alloy) meeting flowing water in a dual-channel chute
+            int c3X = 2 * sectionWidth + 10;
+            int c3W = sectionWidth - 30;
+            grid.DrawBox(c3X, h - 60, c3X + c3W, h - 10, wallIdx, filled: false);
+            // Left reservoir (NaK liquid)
+            grid.DrawBox(c3X + 2, h - 95, c3X + c3W / 2 - 4, h - 75, wallIdx, filled: false);
+            grid.DrawBox(c3X + 4, h - 93, c3X + c3W / 2 - 6, h - 77, nakLiquidIdx, filled: true);
+            grid.SetCell(c3X + c3W / 4, h - 75, MaterialRegistry.EmptyIndex);
+            // Right reservoir (Water)
+            grid.DrawBox(c3X + c3W / 2 + 4, h - 95, c3X + c3W - 2, h - 75, wallIdx, filled: false);
+            grid.DrawBox(c3X + c3W / 2 + 6, h - 93, c3X + c3W - 4, h - 77, waterIdx, filled: true);
+            grid.SetCell(c3X + 3 * c3W / 4, h - 75, MaterialRegistry.EmptyIndex);
+            // Converging chute
+            grid.DrawLine(c3X + 4, h - 65, c3X + c3W / 2 - 2, h - 45, 1, wallIdx);
+            grid.DrawLine(c3X + c3W - 4, h - 65, c3X + c3W / 2 + 2, h - 45, 1, wallIdx);
+        }
+
+        public static void LoadTorchesDemo(SandGrid grid)
+        {
+            grid.Clear();
+            int w = grid.Width;
+            int h = grid.Height;
+
+            ushort wallIdx = grid.Registry.GetIndex("wall");
+            ushort torchIdx = grid.Registry.GetIndex("torch");
+            ushort blueTorchIdx = grid.Registry.GetIndex("blue_torch");
+            ushort greenTorchIdx = grid.Registry.GetIndex("green_torch");
+            ushort whiteTorchIdx = grid.Registry.GetIndex("white_torch");
+            ushort plasmaTorchIdx = grid.Registry.GetIndex("plasma_torch");
+            ushort woodIdx = grid.Registry.GetIndex("wood");
+            ushort iceIdx = grid.Registry.GetIndex("ice");
+            ushort copperIdx = grid.Registry.GetIndex("copper");
+            ushort leadIdx = grid.Registry.GetIndex("lead");
+            ushort plasticIdx = grid.Registry.GetIndex("plastic");
+
+            // Base platform
+            grid.DrawBox(0, h - 8, w - 1, h - 1, wallIdx, filled: true);
+
+            (ushort torch, string name, ushort targetMat)[] torchColumns = {
+                (torchIdx, "Torch (800°C)", woodIdx),
+                (blueTorchIdx, "Blue Torch (1500°C)", leadIdx),
+                (greenTorchIdx, "Green Torch (2000°C)", plasticIdx),
+                (whiteTorchIdx, "White Torch (2600°C)", copperIdx),
+                (plasmaTorchIdx, "Plasma Torch (3500°C)", iceIdx)
+            };
+
+            int colCount = torchColumns.Length;
+            int colWidth = w / colCount;
+
+            for (int i = 0; i < colCount; i++)
+            {
+                int cx = i * colWidth + colWidth / 2;
+                int baseY = h - 20;
+
+                // Support pillar
+                grid.DrawLine(cx, baseY, cx, baseY - 35, 2, wallIdx);
+
+                // Torch head
+                grid.SetCell(cx, baseY - 36, torchColumns[i].torch);
+                grid.SetCell(cx + 1, baseY - 36, torchColumns[i].torch);
+
+                // Test material target suspended above the torch
+                if (torchColumns[i].targetMat > 0)
+                {
+                    grid.DrawBox(cx - 8, baseY - 70, cx + 9, baseY - 62, torchColumns[i].targetMat, filled: true);
+                }
+
+                // Partition wall between columns
+                if (i < colCount - 1)
+                {
+                    grid.DrawLine((i + 1) * colWidth, h - 10, (i + 1) * colWidth, h - 90, 1, wallIdx);
+                }
+            }
+        }
+
+        public static void LoadWaterCooledShieldDemo(SandGrid grid)
+        {
+            grid.Clear();
+            int w = grid.Width;
+            int h = grid.Height;
+
+            ushort wallIdx = grid.Registry.GetIndex("wall");
+            ushort stoneIdx = grid.Registry.GetIndex("stone");
+            ushort copperIdx = grid.Registry.GetIndex("copper");
+            ushort torchIdx = grid.Registry.GetIndex("torch");
+            ushort blueTorchIdx = grid.Registry.GetIndex("blue_torch");
+            ushort waterSpoutIdx = grid.Registry.GetIndex("water_spout");
+            ushort drainIdx = grid.Registry.GetIndex("drain");
+
+            // Base platform
+            grid.DrawBox(0, h - 8, w - 1, h - 1, wallIdx, filled: true);
+
+            // Dividing center wall
+            grid.DrawLine(w / 2, h - 8, w / 2, 10, 2, wallIdx);
+
+            // Left Side: UNCOOLED Rock & Metal under Torches (Burns & Melts)
+            int leftMidX = w / 4;
+            // Rock line
+            grid.DrawBox(leftMidX - 35, h - 55, leftMidX + 35, h - 53, stoneIdx, filled: true);
+            // Metal (copper) line below rock
+            grid.DrawBox(leftMidX - 25, h - 35, leftMidX + 25, h - 33, copperIdx, filled: true);
+            // Torches underneath
+            grid.SetCell(leftMidX - 15, h - 20, torchIdx);
+            grid.SetCell(leftMidX + 15, h - 20, blueTorchIdx);
+            grid.SetCell(leftMidX, h - 42, torchIdx);
+
+            // Right Side: WATER-COOLED Rock & Metal (Protected from Melting)
+            int rightMidX = 3 * w / 4;
+            // Rock line with water spout above
+            grid.DrawBox(rightMidX - 35, h - 55, rightMidX + 35, h - 53, stoneIdx, filled: true);
+            grid.SetCell(rightMidX, h - 75, waterSpoutIdx);
+            // Metal (copper) line below rock
+            grid.DrawBox(rightMidX - 25, h - 35, rightMidX + 25, h - 33, copperIdx, filled: true);
+            grid.SetCell(rightMidX, h - 48, waterSpoutIdx);
+            // Torches underneath
+            grid.SetCell(rightMidX - 15, h - 20, torchIdx);
+            grid.SetCell(rightMidX + 15, h - 20, blueTorchIdx);
+            grid.SetCell(rightMidX, h - 42, torchIdx);
+
+            // Drains at bottom corners
+            grid.DrawBox(2, h - 12, 8, h - 9, drainIdx, filled: true);
+            grid.DrawBox(w - 9, h - 12, w - 3, h - 9, drainIdx, filled: true);
+        }
     }
 }
